@@ -4,6 +4,9 @@ import { StatsOverview } from './components/StatsOverview';
 import { CallList } from './components/CallList';
 import { SimulateCallModal } from './components/SimulateCallModal';
 import { ClusterMonitoringModal } from './components/ClusterMonitoringModal';
+import { ToastContainer } from './components/ToastContainer';
+import { FloatingSimulationDock } from './components/FloatingSimulationDock';
+import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import {
   fetchCalls,
   fetchStats,
@@ -13,7 +16,9 @@ import {
   CallStats,
 } from './services/api';
 
-export const App: React.FC = () => {
+const MainDashboard: React.FC = () => {
+  const { addNotification } = useNotifications();
+
   const [allCalls, setAllCalls] = useState<CallSession[]>([]);
   const [stats, setStats] = useState<CallStats>({
     totalCalls: 0,
@@ -65,14 +70,22 @@ export const App: React.FC = () => {
             if (prev.some((c) => c.callId === data.callId || c.id === data.id)) return prev;
             return [data, ...prev];
           });
-          // Synchronize stats directly with the backend to ensure 100% precision without phantom increments
+
+          // Trigger rich incoming call toast notification
+          addNotification({
+            type: 'incoming_call',
+            title: 'Llamada Entrante Registrada',
+            call: data,
+            durationMs: 5000,
+          });
+
+          // Synchronize stats directly with the backend to ensure 100% precision
           fetchStats().then(setStats).catch(() => {});
         } else if (event === 'call.spam_toggled') {
           // Update call spam status in-place
           setAllCalls((prev) =>
             prev.map((c) => (c.id === data.id || c.callId === data.callId ? { ...c, isSpam: data.isSpam } : c))
           );
-          // Refresh stats accurately
           fetchStats().then(setStats).catch(() => {});
         }
       },
@@ -84,7 +97,7 @@ export const App: React.FC = () => {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [addNotification]);
 
   const handleToggleSpam = async (id: string, isSpam: boolean) => {
     // Instant optimistic UI update
@@ -99,8 +112,21 @@ export const App: React.FC = () => {
       );
       const newStats = await fetchStats();
       setStats(newStats);
+
+      addNotification({
+        type: isSpam ? 'warning' : 'success',
+        title: isSpam ? 'Marcada como Spam' : 'Desmarcada de Spam',
+        message: `Llamada ${updated.callId} (${updated.phoneNumber}) actualizada.`,
+        durationMs: 3000,
+      });
     } catch (err) {
       console.error('Failed to toggle spam status', err);
+      addNotification({
+        type: 'error',
+        title: 'Error de Actualización',
+        message: 'No se pudo actualizar el estado de spam en el servidor.',
+        durationMs: 4000,
+      });
       // Revert on error
       loadData(true);
     }
@@ -131,7 +157,7 @@ export const App: React.FC = () => {
   const spamCallsCount = useMemo(() => allCalls.filter((c) => c.isSpam).length, [allCalls]);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-950 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
       <Header
         streamStatus={streamStatus}
         servedBy={servedBy}
@@ -141,7 +167,7 @@ export const App: React.FC = () => {
         isRefreshing={isRefreshing}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-7">
         {/* KPI Overview Cards */}
         <StatsOverview stats={stats} />
 
@@ -173,13 +199,29 @@ export const App: React.FC = () => {
         onClose={() => setIsMonitoringOpen(false)}
       />
 
+      {/* Floating Simulation Dock (active while simulation runs in background) */}
+      <FloatingSimulationDock
+        onOpenModal={() => setIsSimulateOpen(true)}
+        isModalOpen={isSimulateOpen}
+      />
+
+      {/* Floating Notifications & Toasts */}
+      <ToastContainer />
+
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-4 px-4 text-center text-xs text-slate-500">
-        <p>Sistema de Gestión de Llamadas Entrantes • Stack Laravel 11, React 18, Redis Idempotency Cache & Nginx Load Balancer</p>
+      <footer className="border-t border-slate-900 bg-slate-950/80 py-5 px-4 text-center text-xs text-slate-500">
+        <p>Sistema de Gestión de Telefonía en Tiempo Real • Laravel 11, React 18, Redis Idempotency & Nginx Load Balancer</p>
       </footer>
     </div>
   );
 };
 
-export default App;
+export const App: React.FC = () => {
+  return (
+    <NotificationProvider>
+      <MainDashboard />
+    </NotificationProvider>
+  );
+};
 
+export default App;
