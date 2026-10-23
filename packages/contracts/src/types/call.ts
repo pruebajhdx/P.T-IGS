@@ -73,3 +73,4 @@ export interface RealtimeCallEvent {
   data: CallSessionDTO;
   timestamp: string;
 }
+
