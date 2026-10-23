@@ -1,6 +1,7 @@
-FROM php:8.2-cli-alpine
+FROM php:8.3-cli-alpine
 
-# Install system dependencies
+# Install system dependencies and build libraries
+# Note: linux-headers is required for compiling sockets extension on Alpine
 RUN apk add --no-cache \
     curl \
     git \
@@ -9,10 +10,9 @@ RUN apk add --no-cache \
     zip \
     unzip \
     netcat-openbsd \
-    $PHPIZE_DEPS
-
-# Install PHP extensions
-RUN docker-php-ext-install pdo pdo_pgsql pcntl bcmath sockets \
+    linux-headers \
+    $PHPIZE_DEPS \
+    && docker-php-ext-install pdo pdo_pgsql pcntl bcmath sockets \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apk del $PHPIZE_DEPS
@@ -23,16 +23,15 @@ COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application files
+# Copy application files from repository root context
 COPY apps/api .
 
-# Copy custom php.ini if needed
+# Copy custom php.ini configuration
 COPY docker/php/local.ini /usr/local/etc/php/conf.d/local.ini
 
-# Ensure entrypoint is executable
-RUN chmod +x docker-entrypoint.sh
+# Fix potential Windows CRLF line endings and set permissions
+RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh
 
 EXPOSE 8000
 
 ENTRYPOINT ["/var/www/html/docker-entrypoint.sh"]
-
