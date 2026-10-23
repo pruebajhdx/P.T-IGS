@@ -1,0 +1,5 @@
+Contexto detallado:
+- Sistema de Notificaciones Enterprise: Implementación de ToastContainer y NotificationContext para alertas no invasivas de eventos críticos (detección de spam, llamadas de alto riesgo y cambios de estado).
+- Floating Simulation Dock: Dock flotante minimizable que permite correr simulaciones de tráfico en segundo plano mientras se interactúa con el resto de la UI.
+- Feedback Auditivo: Integración de efectos de sonido Web Audio API sintetizados sin dependencias externas para llamadas entrantes y alertas de spam.
+- Pulido de UI/UX: Rediseño visual del modal de simulación, tarjeta de estadísticas y cabecera.
