@@ -1,0 +1,4 @@
+Contexto detallado:
+- Observabilidad y Monitoreo: Creación de ClusterMonitoringController y componente interactivo ClusterMonitoringModal para supervisar en tiempo real el estado de Redis, base de datos MySQL, latencia y métricas de llamadas.
+- SSE Fast Reconnect: Optimización del canal SSE (CallStreamController y Nginx buffer off) para reconexión ultra-rápida y menor overhead en la conexión HTTP.
+- Batch Webhook Simulator: Incorporación en el frontend de un simulador visual con capacidad para disparar ráfagas de llamadas, llamadas concurrentes e inyección deliberada de spam.
