@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->report(function (\Throwable $e) {
+            // Sentry exception capture if configured
+            if (app()->bound('sentry') && !empty(env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')))) {
+                app('sentry')->captureException($e);
+            }
+        });
     })->create();
 

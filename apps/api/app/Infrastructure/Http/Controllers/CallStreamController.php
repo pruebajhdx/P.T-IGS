@@ -14,10 +14,14 @@ final class CallStreamController extends Controller
     public function stream(): StreamedResponse
     {
         $response = new StreamedResponse(function () {
-            // Disable output buffering
-            if (ob_get_level() > 0) {
+            // Disable and clean all output buffering levels
+            while (ob_get_level() > 0) {
                 ob_end_clean();
             }
+
+            // Send initial SSE comment padding (2KB) to force immediate proxy header flush
+            echo ":" . str_repeat(" ", 2048) . "\n\n";
+            flush();
 
             // Send initial connection handshake event
             echo "event: connected\n";

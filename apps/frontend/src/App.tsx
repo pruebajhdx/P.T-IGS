@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { StatsOverview } from './components/StatsOverview';
 import { CallList } from './components/CallList';
 import { SimulateCallModal } from './components/SimulateCallModal';
+import { ClusterMonitoringModal } from './components/ClusterMonitoringModal';
 import {
   fetchCalls,
   fetchStats,
@@ -27,6 +28,7 @@ export const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [spamFilter, setSpamFilter] = useState('');
   const [isSimulateOpen, setIsSimulateOpen] = useState(false);
+  const [isMonitoringOpen, setIsMonitoringOpen] = useState(false);
 
   // Load calls and stats from API
   const loadData = useCallback(async (isSilent = false) => {
@@ -115,6 +117,7 @@ export const App: React.FC = () => {
         servedBy={servedBy}
         onRefresh={() => loadData()}
         onOpenSimulate={() => setIsSimulateOpen(true)}
+        onOpenMonitoring={() => setIsMonitoringOpen(true)}
         isRefreshing={isRefreshing}
       />
 
@@ -139,6 +142,12 @@ export const App: React.FC = () => {
         isOpen={isSimulateOpen}
         onClose={() => setIsSimulateOpen(false)}
         onCallSent={() => loadData(true)}
+      />
+
+      {/* Cluster Monitoring & Observability Modal */}
+      <ClusterMonitoringModal
+        isOpen={isMonitoringOpen}
+        onClose={() => setIsMonitoringOpen(false)}
       />
 
       {/* Footer */}

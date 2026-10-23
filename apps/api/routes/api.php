@@ -3,6 +3,7 @@
 use App\Infrastructure\Http\Controllers\CallController;
 use App\Infrastructure\Http\Controllers\CallStreamController;
 use App\Infrastructure\Http\Controllers\CallWebhookController;
+use App\Infrastructure\Http\Controllers\ClusterMonitoringController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -31,5 +32,10 @@ Route::prefix('v1')->group(function () {
 
     // Real-time Server-Sent Events (SSE) stream
     Route::get('/calls/stream', [CallStreamController::class, 'stream']);
+
+    // Cluster & Observability monitoring endpoints (Nginx, Replicas, Postgres, Redis, Sentry)
+    Route::get('/monitoring/cluster', [ClusterMonitoringController::class, 'status']);
+    Route::get('/monitoring/errors', [ClusterMonitoringController::class, 'errors']);
+    Route::post('/monitoring/test-error', [ClusterMonitoringController::class, 'triggerTestError']);
 });
 

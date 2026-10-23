@@ -1,11 +1,12 @@
 import React from 'react';
-import { PhoneCall, RefreshCw, PlusCircle, ShieldCheck } from 'lucide-react';
+import { PhoneCall, RefreshCw, PlusCircle, ShieldCheck, Activity } from 'lucide-react';
 
 interface HeaderProps {
   streamStatus: 'connected' | 'reconnecting' | 'disconnected';
   servedBy?: string;
   onRefresh: () => void;
   onOpenSimulate: () => void;
+  onOpenMonitoring: () => void;
   isRefreshing: boolean;
 }
 
@@ -14,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   servedBy,
   onRefresh,
   onOpenSimulate,
+  onOpenMonitoring,
   isRefreshing,
 }) => {
   return (
@@ -62,6 +64,16 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Nodo: <span className="text-white font-mono">{servedBy}</span></span>
             </div>
           )}
+
+          {/* Cluster & Observability Monitoring button */}
+          <button
+            onClick={onOpenMonitoring}
+            title="Abrir panel de monitoreo de cluster, balanceadores y errores"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-800/60 text-xs font-medium transition"
+          >
+            <Activity className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Monitoreo Cluster</span>
+          </button>
 
           {/* Manual Refresh button */}
           <button
