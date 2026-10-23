@@ -13,3 +13,4 @@ final class InvalidDurationException extends DomainException
         return new self("Call duration cannot be negative. Given: {$duration} seconds.");
     }
 }
+

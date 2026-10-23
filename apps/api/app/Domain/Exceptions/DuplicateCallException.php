@@ -13,3 +13,4 @@ final class DuplicateCallException extends DomainException
         return new self("Call with ID '{$callId}' has already been processed (idempotent duplicate).");
     }
 }
+

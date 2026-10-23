@@ -53,3 +53,4 @@ final class Duration
         return (string) $this->seconds;
     }
 }
+

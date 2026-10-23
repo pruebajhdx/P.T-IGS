@@ -13,3 +13,4 @@ final class InvalidPhoneNumberException extends DomainException
         return new self("The phone number '{$number}' has an invalid format. Must contain between 7 and 25 digits and valid dialing characters.");
     }
 }
+

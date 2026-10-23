@@ -18,3 +18,4 @@ final class CallNotFoundException extends DomainException
         return new self("Call with provider callId '{$callId}' was not found.");
     }
 }
+

@@ -55,3 +55,4 @@ final class RegisterIncomingCallUseCase
         return CallResponseDTO::fromDomain($savedCall);
     }
 }
+

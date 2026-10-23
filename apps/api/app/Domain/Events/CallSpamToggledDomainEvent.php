@@ -16,3 +16,4 @@ final class CallSpamToggledDomainEvent
     ) {
     }
 }
+

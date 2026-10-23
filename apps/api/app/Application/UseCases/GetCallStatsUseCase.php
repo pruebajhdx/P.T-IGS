@@ -21,3 +21,4 @@ final class GetCallStatsUseCase
         return CallStatsDTO::fromArray($metrics);
     }
 }
+

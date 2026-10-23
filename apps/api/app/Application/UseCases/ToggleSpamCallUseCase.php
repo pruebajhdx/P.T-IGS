@@ -40,3 +40,4 @@ final class ToggleSpamCallUseCase
         return CallResponseDTO::fromDomain($updatedCall);
     }
 }
+
