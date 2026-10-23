@@ -78,78 +78,89 @@ export const CallList: React.FC<CallListProps> = ({
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-md">
       {/* Search & Filter Toolbar */}
-      <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3.5 bg-slate-900/70">
-        {/* Search Input */}
-        <div className="relative w-full md:w-88">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar por teléfono, agente o callId..."
-            className="w-full bg-slate-950/80 border border-slate-700/80 rounded-2xl pl-10 pr-9 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => onSearchChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5 rounded-full hover:bg-slate-800"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+      <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col gap-4 bg-slate-900/70">
+        {/* Row 1: Search Input & Call Counter */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full">
+          <div className="relative w-full sm:max-w-md">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Buscar por teléfono, agente o ID de llamada..."
+              className="w-full bg-slate-950/80 border border-slate-700/80 rounded-2xl pl-10 pr-9 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="text-xs text-slate-400 flex items-center gap-1.5 self-end sm:self-center">
+            <span>Mostrando:</span>
+            <span className="font-mono font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-lg border border-sky-500/20">
+              {calls.length}
+            </span>
+            <span className="text-slate-600">/</span>
+            <span className="font-mono text-slate-300">
+              {allCallsCount ?? calls.length} total
+            </span>
+          </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+        {/* Row 2: Full-Width Clean Segmented Tabs (NO scrollbars, 100% visible) */}
+        <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-2 p-1.5 bg-slate-950/90 rounded-2xl border border-slate-800/80">
           <button
             onClick={() => onSpamFilterChange('')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+            className={`py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border ${
               spamFilter === ''
-                ? 'bg-sky-600 border-sky-400 text-white shadow-md shadow-sky-600/30'
-                : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-sky-600 to-indigo-600 border-sky-400 text-white shadow-lg shadow-sky-900/40'
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900'
             }`}
           >
-            <span>Todas</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-              spamFilter === '' ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
+            <span>Todas las Llamadas</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+              spamFilter === '' ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800'
             }`}>
               {allCallsCount ?? calls.length}
             </span>
           </button>
+
           <button
             onClick={() => onSpamFilterChange('false')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+            className={`py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border ${
               spamFilter === 'false'
-                ? 'bg-sky-600 border-sky-400 text-white shadow-md shadow-sky-600/30'
-                : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400 text-white shadow-lg shadow-emerald-900/40'
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900'
             }`}
           >
-            <span>Válidas</span>
-            {validCallsCount !== undefined && (
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                spamFilter === 'false' ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
-              }`}>
-                {validCallsCount}
-              </span>
-            )}
+            <span>Llamadas Válidas</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+              spamFilter === 'false' ? 'bg-white/20 text-white' : 'bg-slate-900 text-emerald-400 border border-slate-800'
+            }`}>
+              {validCallsCount ?? 0}
+            </span>
           </button>
+
           <button
             onClick={() => onSpamFilterChange('true')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+            className={`py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border ${
               spamFilter === 'true'
-                ? 'bg-rose-600 border-rose-400 text-white shadow-md shadow-rose-600/30'
-                : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-rose-600 to-red-600 border-rose-400 text-white shadow-lg shadow-rose-900/40'
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900'
             }`}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
-            <span>Spam</span>
-            {spamCallsCount !== undefined && (
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                spamFilter === 'true' ? 'bg-white/20 text-white' : 'bg-slate-900 text-rose-400'
-              }`}>
-                {spamCallsCount}
-              </span>
-            )}
+            <span>Detectadas como Spam</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+              spamFilter === 'true' ? 'bg-white/20 text-white' : 'bg-slate-900 text-rose-400 border border-slate-800'
+            }`}>
+              {spamCallsCount ?? 0}
+            </span>
           </button>
         </div>
       </div>

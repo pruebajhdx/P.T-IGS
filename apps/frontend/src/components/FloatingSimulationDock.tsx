@@ -62,3 +62,4 @@ export const FloatingSimulationDock: React.FC<FloatingSimulationDockProps> = ({
     </div>
   );
 };
+

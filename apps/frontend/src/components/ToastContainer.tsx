@@ -239,3 +239,4 @@ const ToastItem: React.FC<ToastItemProps> = ({ notif, onClose, onStopBatch }) =>
     </div>
   );
 };
+

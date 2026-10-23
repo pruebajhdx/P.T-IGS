@@ -35,7 +35,7 @@ export interface BatchSimulationOptions {
   delayMs: number;
   recurrenceRate: number; // 0 to 100
   duplicateRate: number; // 0 to 80
-  onCallSent?: () => void;
+  onCallSent?: (call?: CallSession, isDuplicate?: boolean) => void;
 }
 
 interface NotificationContextValue {
@@ -220,6 +220,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           stats.created += 1;
           if (isRecurrent) stats.recurring += 1;
         }
+
+        // Live trigger UI update with the newly registered call session
+        if (options.onCallSent) {
+          options.onCallSent(res.data, res.isDuplicate);
+        }
       } catch {
         stats.errors += 1;
       }
@@ -233,10 +238,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         message: `${stats.created} creadas • ${stats.duplicates} idempotentes • ${stats.recurring} recurrentes`,
         batchStats: { ...stats, speedMs: options.delayMs },
       });
-
-      if (options.onCallSent) {
-        options.onCallSent();
-      }
 
       if (options.delayMs > 0 && i < options.count - 1) {
         await new Promise((r) => setTimeout(r, options.delayMs));
@@ -286,3 +287,4 @@ export const useNotifications = () => {
   if (!ctx) throw new Error('useNotifications must be used within NotificationProvider');
   return ctx;
 };
+

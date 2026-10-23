@@ -10,13 +10,13 @@ import {
   Sliders,
   Sparkles,
 } from 'lucide-react';
-import { sendCallWebhook, WebhookPayload } from '../services/api';
+import { sendCallWebhook, WebhookPayload, CallSession } from '../services/api';
 import { useNotifications } from '../context/NotificationContext';
 
 interface SimulateCallModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCallSent: () => void;
+  onCallSent: (call?: CallSession, isDuplicate?: boolean) => void;
 }
 
 export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
@@ -103,7 +103,7 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
         });
       }
 
-      onCallSent();
+      onCallSent(res.data, res.isDuplicate);
     } catch (err: any) {
       setLastResult({
         success: false,

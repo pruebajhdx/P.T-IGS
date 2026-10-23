@@ -156,6 +156,34 @@ const MainDashboard: React.FC = () => {
   const validCallsCount = useMemo(() => allCalls.filter((c) => !c.isSpam).length, [allCalls]);
   const spamCallsCount = useMemo(() => allCalls.filter((c) => c.isSpam).length, [allCalls]);
 
+  // Real-time computed stats derived directly from in-memory allCalls for 0ms reactivity
+  const liveStats = useMemo<CallStats>(() => {
+    const total = Math.max(allCalls.length, stats.totalCalls);
+    const recurring = allCalls.filter((c) => c.hasCalledBefore).length;
+    const spam = allCalls.filter((c) => c.isSpam).length;
+    const totalDuration = allCalls.reduce((acc, c) => acc + (c.durationSeconds || 0), 0);
+    const avgDuration = allCalls.length > 0 ? totalDuration / allCalls.length : stats.avgDurationSeconds;
+
+    return {
+      totalCalls: total,
+      recurringCalls: Math.max(recurring, stats.recurringCalls),
+      spamCalls: spam,
+      avgDurationSeconds: avgDuration || stats.avgDurationSeconds,
+    };
+  }, [allCalls, stats]);
+
+  // Handler for newly emitted calls from simulations (both single and batch)
+  const handleCallSent = useCallback((newCall?: CallSession, isDuplicate?: boolean) => {
+    if (newCall && !isDuplicate) {
+      setAllCalls((prev) => {
+        if (prev.some((c) => c.callId === newCall.callId || c.id === newCall.id)) return prev;
+        return [newCall, ...prev];
+      });
+    }
+    // Synchronize stats in background
+    fetchStats().then(setStats).catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
       <Header
@@ -168,8 +196,8 @@ const MainDashboard: React.FC = () => {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-7">
-        {/* KPI Overview Cards */}
-        <StatsOverview stats={stats} />
+        {/* KPI Overview Cards with 0ms Reactivity */}
+        <StatsOverview stats={liveStats} />
 
         {/* Real-time Call List & Controls */}
         <CallList
@@ -190,7 +218,7 @@ const MainDashboard: React.FC = () => {
       <SimulateCallModal
         isOpen={isSimulateOpen}
         onClose={() => setIsSimulateOpen(false)}
-        onCallSent={() => loadData(true)}
+        onCallSent={handleCallSent}
       />
 
       {/* Cluster Monitoring & Observability Modal */}

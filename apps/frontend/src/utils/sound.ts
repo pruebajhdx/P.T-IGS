@@ -74,3 +74,4 @@ export function playSuccessChime(muted = false) {
     // Ignore audio errors
   }
 }
+
