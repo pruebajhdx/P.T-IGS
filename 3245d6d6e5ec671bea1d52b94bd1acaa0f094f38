@@ -1,0 +1,5 @@
+Contexto detallado:
+- Backend: Integración completa de idempotencia basada en Redis con cache lock y TTL para prevenir procesamiento duplicado en los webhooks entrantes.
+- Event-Driven Architecture: Implementación de BroadcastCallEventsListener para desacoplar la persistencia del disparo de eventos hacia Redis Pub/Sub.
+- Testing Suite: Incorporación de tests de integración en PHPUnit para validación de idempotencia (WebhookIdempotencyTest), detección de llamadas previas (PriorCallerDetectionTest) y marcación de spam (MarkSpamTest).
+- Frontend & Scripts: Tipado estricto compartido en packages/contracts y mejoras al script de PowerShell para simulación de llamadas concurrentes.
