@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\DTOs\IncomingCallDTO;
+use App\Application\DTOs\CallResponseDTO;
 use App\Application\UseCases\RegisterIncomingCallUseCase;
-use App\Infrastructure\Services\RedisBroadcastService;
+use App\Domain\Repositories\CallRepositoryInterface;
+use App\Domain\ValueObjects\CallId;
 use App\Infrastructure\Services\RedisIdempotencyService;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -17,8 +21,8 @@ final class CallWebhookController extends Controller
 {
     public function __construct(
         private readonly RegisterIncomingCallUseCase $registerIncomingCallUseCase,
-        private readonly RedisIdempotencyService $idempotencyService,
-        private readonly RedisBroadcastService $broadcastService
+        private readonly CallRepositoryInterface $callRepository,
+        private readonly RedisIdempotencyService $idempotencyService
     ) {
     }
 
@@ -58,18 +62,19 @@ final class CallWebhookController extends Controller
                 callId: $callId,
                 action: function () use ($validated): array {
                     $dto = IncomingCallDTO::fromArray($validated);
-                    $responseDTO = $this->registerIncomingCallUseCase->execute($dto);
-                    return $responseDTO->toArray();
+                    $result = $this->registerIncomingCallUseCase->execute($dto);
+                    return [
+                        'call' => $result->call->toArray(),
+                        'is_duplicate' => $result->isDuplicate,
+                    ];
                 }
             );
 
-            $callData = $idempotencyResult['data'];
-            $isDuplicate = $idempotencyResult['is_duplicate'];
-
-            // Broadcast real-time event only for brand new calls
-            if (!$isDuplicate) {
-                $this->broadcastService->broadcast('call.created', $callData);
-            }
+            // Extract call data whether returned from fresh execution or cached idempotency replay
+            $rawPayload = $idempotencyResult['data'];
+            $callData = isset($rawPayload['call']) ? $rawPayload['call'] : $rawPayload;
+            $dbDuplicate = isset($rawPayload['is_duplicate']) ? (bool) $rawPayload['is_duplicate'] : false;
+            $isDuplicate = $idempotencyResult['is_duplicate'] || $dbDuplicate;
 
             $instanceId = env('INSTANCE_ID', gethostname());
 
@@ -87,6 +92,34 @@ final class CallWebhookController extends Controller
             ], $statusCode)
             ->header('X-Served-By', (string) $instanceId)
             ->header('X-Idempotent-Replay', $isDuplicate ? 'true' : 'false');
+
+        } catch (UniqueConstraintViolationException | QueryException $e) {
+            // Layer 2 Idempotency: Database UNIQUE constraint collision safeguard under high concurrency
+            Log::info("Idempotency: Database unique constraint triggered for callId '{$callId}', recovering stored entity.");
+
+            $existingCall = $this->callRepository->findByCallId(CallId::fromString($callId));
+            if ($existingCall !== null) {
+                $callData = CallResponseDTO::fromDomain($existingCall)->toArray();
+                $instanceId = env('INSTANCE_ID', gethostname());
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Call event already processed (idempotent duplicate via DB constraint)',
+                    'data' => $callData,
+                    'meta' => [
+                        'isDuplicate' => true,
+                        'servedBy' => $instanceId,
+                        'timestamp' => (new \DateTimeImmutable())->format(DATE_ATOM),
+                    ],
+                ], 200)
+                ->header('X-Served-By', (string) $instanceId)
+                ->header('X-Idempotent-Replay', 'true');
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Duplicate call collision detected, but existing record could not be loaded.',
+            ], 409);
 
         } catch (\Throwable $e) {
             Log::error("Error handling call webhook: {$e->getMessage()}", [

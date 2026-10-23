@@ -1,32 +1,15 @@
-export interface CallSession {
-  id: string;
-  callId: string;
-  phoneNumber: string;
-  agent: string;
-  durationSeconds: number;
-  durationFormatted?: string;
-  recordingUrl: string;
-  hasCalledBefore: boolean;
-  previousCallsCount: number;
-  isSpam: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import type {
+  CallSessionDTO,
+  CallStatsDTO,
+  IncomingCallWebhookPayload,
+  ToggleSpamPayload,
+  ApiResponse,
+} from '@monorepo/contracts';
 
-export interface CallStats {
-  totalCalls: number;
-  recurringCalls: number;
-  spamCalls: number;
-  avgDurationSeconds: number;
-}
-
-export interface WebhookPayload {
-  callId: string;
-  phoneNumber: string;
-  agent: string;
-  durationSeconds: number;
-  recordingUrl: string;
-}
+export type CallSession = CallSessionDTO;
+export type CallStats = CallStatsDTO;
+export type WebhookPayload = IncomingCallWebhookPayload;
+export type { ToggleSpamPayload, ApiResponse };
 
 const API_BASE = '/api/v1';
 

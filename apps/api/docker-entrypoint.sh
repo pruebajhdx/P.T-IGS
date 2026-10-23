@@ -3,9 +3,9 @@ set -e
 
 cd /var/www/html
 
-# Install dependencies if vendor does not exist
-if [ ! -d "vendor" ]; then
-    echo "Installing Composer dependencies..."
+# Install dependencies if vendor does not exist or is incomplete
+if [ ! -f "vendor/autoload.php" ]; then
+    echo "Installing Composer dependencies (vendor/autoload.php not found)..."
     composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
@@ -33,6 +33,8 @@ echo "Redis is ready!"
 echo "Running database migrations..."
 php artisan migrate --force || true
 
-echo "Starting Laravel application on port 8000..."
+export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-8}"
+
+echo "Starting Laravel application with ${PHP_CLI_SERVER_WORKERS} workers on port 8000..."
 exec php artisan serve --host=0.0.0.0 --port=8000
 

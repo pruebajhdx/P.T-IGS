@@ -29,6 +29,9 @@ final class CallStreamController extends Controller
 
             flush();
 
+            // Keep track of event IDs already delivered to this client to prevent duplicates
+            $seenEventIds = [];
+
             // Send recent events buffer if available so client state is immediately up to date
             try {
                 $recentEvents = Redis::lrange(RedisBroadcastService::RECENT_EVENTS_KEY, 0, 9);
@@ -36,6 +39,8 @@ final class CallStreamController extends Controller
                     foreach (array_reverse($recentEvents) as $eventJson) {
                         $parsed = json_decode($eventJson, true);
                         if ($parsed && isset($parsed['event'], $parsed['data'])) {
+                            $id = $parsed['id'] ?? md5($eventJson);
+                            $seenEventIds[$id] = true;
                             echo "event: {$parsed['event']}\n";
                             echo "data: " . json_encode($parsed['data']) . "\n\n";
                         }
@@ -48,18 +53,49 @@ final class CallStreamController extends Controller
 
             $startTime = time();
             $maxExecutionTime = 55; // Keep connection for up to 55s per stream cycle, then let client auto-reconnect
+            $lastKeepAlive = time();
 
-            // Loop checking for events or heartbeats
+            // Continuous streaming loop checking for live events or heartbeats
             while (time() - $startTime < $maxExecutionTime) {
                 if (connection_aborted()) {
                     break;
                 }
 
-                // Send keep-alive comment
-                echo ": keepalive\n\n";
-                flush();
+                // 1. Check for newly published events in Redis ring buffer
+                try {
+                    $latestEvents = Redis::lrange(RedisBroadcastService::RECENT_EVENTS_KEY, 0, 9);
+                    if (!empty($latestEvents)) {
+                        $hasNew = false;
+                        // Inspect from oldest to newest in current slice
+                        foreach (array_reverse($latestEvents) as $eventJson) {
+                            $parsed = json_decode($eventJson, true);
+                            if ($parsed && isset($parsed['event'], $parsed['data'])) {
+                                $id = $parsed['id'] ?? md5($eventJson);
+                                if (!isset($seenEventIds[$id])) {
+                                    $seenEventIds[$id] = true;
+                                    echo "event: {$parsed['event']}\n";
+                                    echo "data: " . json_encode($parsed['data']) . "\n\n";
+                                    $hasNew = true;
+                                }
+                            }
+                        }
+                        if ($hasNew) {
+                            flush();
+                        }
+                    }
+                } catch (\Throwable) {
+                    // Ignore transient Redis errors
+                }
 
-                sleep(2);
+                // 2. Send keep-alive comment periodically (every 5 seconds)
+                if (time() - $lastKeepAlive >= 5) {
+                    echo ": keepalive\n\n";
+                    flush();
+                    $lastKeepAlive = time();
+                }
+
+                // Non-blocking 500ms sleep (responsive to disconnects and new calls)
+                usleep(500000);
             }
         });
 

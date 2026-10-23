@@ -69,8 +69,8 @@ Para garantizar que un webhook duplicado no genere registros redundantes ni cond
 1. **Capa 1: Bloqueo y Replay Distribuido en Redis**:
    - Al recibir una solicitud, se evalúa si la respuesta previa ya está en caché en `idempotency:call:result:{callId}`. Si existe, se devuelve inmediatamente con código HTTP `200` y el encabezado `X-Idempotent-Replay: true`.
    - Si no existe, se adquiere un candado atómico distribuido (`idempotency:call:lock:{callId}`). Si llegan dos llamadas concurrentes a réplicas distintas (`api-1` y `api-2`), solo una adquiere el candado mientras la otra espera de manera segura el resultado consolidado.
-2. **Capa 2: Restricción Única en Base de Datos**:
-   - La columna `call_id` cuenta con un índice `UNIQUE` en PostgreSQL, impidiendo duplicados a nivel de almacenamiento incluso ante caídas o reinicios de caché.
+2. **Capa 2: Restricción Única en Base de Datos y Salvaguarda de Concurrencia**:
+   - La columna `call_id` cuenta con un índice `UNIQUE` en PostgreSQL. Incluso ante reinicios o desalojos de Redis, las colisiones por concurrencia extrema son capturadas a nivel de controlador para recuperar la entidad existente y retornar HTTP `200` con `X-Idempotent-Replay: true`, garantizando cero errores 500 ante peticiones duplicadas simultáneas.
 
 ---
 

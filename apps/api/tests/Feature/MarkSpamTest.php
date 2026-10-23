@@ -36,7 +36,19 @@ class MarkSpamTest extends TestCase
             'is_spam' => true,
         ]);
 
-        // 3. Unmark as spam
+        // 3. Replay webhook to verify idempotency cache was invalidated and returns updated isSpam = true
+        $replayResponse = $this->postJson('/api/v1/webhooks/calls', [
+            'callId' => 'call-spam-test-1',
+            'phoneNumber' => '+573000000001',
+            'agent' => 'agente-test',
+            'durationSeconds' => 15,
+            'recordingUrl' => 'https://grabaciones.ejemplo.com/spam.mp3',
+        ]);
+        $replayResponse->assertStatus(200)
+            ->assertJsonPath('data.isSpam', true)
+            ->assertHeader('X-Idempotent-Replay', 'true');
+
+        // 4. Unmark as spam
         $unmarkResponse = $this->patchJson("/api/v1/calls/{$callId}/spam", [
             'isSpam' => false,
         ]);

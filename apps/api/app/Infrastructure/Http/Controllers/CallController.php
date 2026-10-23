@@ -8,7 +8,6 @@ use App\Application\UseCases\GetCallStatsUseCase;
 use App\Application\UseCases\ListCallsUseCase;
 use App\Application\UseCases\ToggleSpamCallUseCase;
 use App\Domain\Exceptions\CallNotFoundException;
-use App\Infrastructure\Services\RedisBroadcastService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -18,8 +17,7 @@ final class CallController extends Controller
     public function __construct(
         private readonly ListCallsUseCase $listCallsUseCase,
         private readonly ToggleSpamCallUseCase $toggleSpamCallUseCase,
-        private readonly GetCallStatsUseCase $getCallStatsUseCase,
-        private readonly RedisBroadcastService $broadcastService
+        private readonly GetCallStatsUseCase $getCallStatsUseCase
     ) {
     }
 
@@ -82,9 +80,6 @@ final class CallController extends Controller
         try {
             $updatedDto = $this->toggleSpamCallUseCase->execute($id, $isSpam);
             $callArray = $updatedDto->toArray();
-
-            // Broadcast real-time update
-            $this->broadcastService->broadcast('call.spam_toggled', $callArray);
 
             return response()->json([
                 'success' => true,

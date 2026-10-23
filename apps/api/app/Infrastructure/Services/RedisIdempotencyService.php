@@ -82,5 +82,13 @@ final class RedisIdempotencyService
             optional($lock)->release();
         }
     }
+
+    /**
+     * Invalidate cached idempotency result (e.g. when state is mutated like spam toggle).
+     */
+    public function invalidate(string $callId): void
+    {
+        Cache::forget(self::CACHE_PREFIX . $callId);
+    }
 }
 

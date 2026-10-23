@@ -23,6 +23,7 @@ export interface CallSessionDTO {
   phoneNumber: string;
   agent: string;
   durationSeconds: number;
+  durationFormatted?: string;
   recordingUrl: string;
   hasCalledBefore: boolean;
   previousCallsCount: number;

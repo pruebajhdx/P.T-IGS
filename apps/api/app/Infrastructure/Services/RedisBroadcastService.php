@@ -6,6 +6,7 @@ namespace App\Infrastructure\Services;
 
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 final class RedisBroadcastService
 {
@@ -21,6 +22,7 @@ final class RedisBroadcastService
     public function broadcast(string $eventType, array $payload): void
     {
         $message = json_encode([
+            'id' => (string) Str::uuid(),
             'event' => $eventType,
             'data' => $payload,
             'timestamp' => (new \DateTimeImmutable())->format(DATE_ATOM),

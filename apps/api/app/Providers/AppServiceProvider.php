@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Events\CallReceivedDomainEvent;
+use App\Domain\Events\CallSpamToggledDomainEvent;
 use App\Domain\Repositories\CallRepositoryInterface;
+use App\Infrastructure\Listeners\BroadcastCallEventsListener;
 use App\Infrastructure\Repositories\EloquentCallRepository;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 final class AppServiceProvider extends ServiceProvider
@@ -23,7 +27,8 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Event::listen(CallReceivedDomainEvent::class, [BroadcastCallEventsListener::class, 'handleCallReceived']);
+        Event::listen(CallSpamToggledDomainEvent::class, [BroadcastCallEventsListener::class, 'handleCallSpamToggled']);
     }
 }
 

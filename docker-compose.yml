@@ -44,6 +44,7 @@ services:
       REDIS_PORT: 6379
       CACHE_STORE: redis
       INSTANCE_ID: "api-replica-1"
+      PHP_CLI_SERVER_WORKERS: "8"
     volumes:
       - ./apps/api:/var/www/html
     depends_on:
@@ -81,6 +82,7 @@ services:
       REDIS_PORT: 6379
       CACHE_STORE: redis
       INSTANCE_ID: "api-replica-2"
+      PHP_CLI_SERVER_WORKERS: "8"
     volumes:
       - ./apps/api:/var/www/html
     depends_on:

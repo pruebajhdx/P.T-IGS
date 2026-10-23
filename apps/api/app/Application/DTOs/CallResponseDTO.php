@@ -29,7 +29,7 @@ final class CallResponseDTO
         return new self(
             id: $call->id(),
             callId: $call->callId()->value(),
-            phoneNumber: $call->phoneNumber()->value(),
+            phoneNumber: $call->phoneNumber()->canonical(),
             agent: $call->agent(),
             durationSeconds: $call->duration()->toSeconds(),
             durationFormatted: $call->duration()->formatted(),

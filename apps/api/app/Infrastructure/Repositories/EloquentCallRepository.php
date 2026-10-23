@@ -13,6 +13,7 @@ use App\Domain\ValueObjects\RecordingUrl;
 use App\Infrastructure\Persistence\Eloquent\CallModel;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 final class EloquentCallRepository implements CallRepositoryInterface
 {
@@ -21,7 +22,7 @@ final class EloquentCallRepository implements CallRepositoryInterface
         $model = CallModel::query()->create([
             'id' => $call->id(),
             'call_id' => $call->callId()->value(),
-            'phone_number' => $call->phoneNumber()->value(),
+            'phone_number' => $call->phoneNumber()->canonical(),
             'agent' => $call->agent(),
             'duration_seconds' => $call->duration()->toSeconds(),
             'recording_url' => $call->recordingUrl()->value(),
@@ -35,6 +36,11 @@ final class EloquentCallRepository implements CallRepositoryInterface
 
     public function findById(string $id): ?Call
     {
+        // PostgreSQL strictly validates UUID syntax; avoid 22P02 syntax error on non-UUID strings
+        if (!Str::isUuid($id)) {
+            return null;
+        }
+
         $model = CallModel::query()->find($id);
 
         return $model ? $this->toDomain($model) : null;
@@ -50,7 +56,7 @@ final class EloquentCallRepository implements CallRepositoryInterface
     public function countPreviousCallsByPhoneNumber(PhoneNumber $phoneNumber): int
     {
         return CallModel::query()
-            ->where('phone_number', $phoneNumber->value())
+            ->where('phone_number', $phoneNumber->canonical())
             ->count();
     }
 

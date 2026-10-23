@@ -87,5 +87,32 @@ class WebhookIdempotencyTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['callId', 'phoneNumber', 'agent', 'durationSeconds', 'recordingUrl']);
     }
+
+    public function test_idempotency_safeguard_works_even_if_redis_cache_is_evicted(): void
+    {
+        $payload = [
+            'callId' => 'c-cache-evicted-123',
+            'phoneNumber' => '+573155556677',
+            'agent' => 'agente-fallback',
+            'durationSeconds' => 110,
+            'recordingUrl' => 'https://grabaciones.ejemplo.com/c-evict.mp3',
+        ];
+
+        // 1st request -> Created (201)
+        $firstResponse = $this->postJson('/api/v1/webhooks/calls', $payload);
+        $firstResponse->assertStatus(201)
+            ->assertJsonPath('meta.isDuplicate', false);
+
+        // Simulate complete Redis eviction / restart
+        Cache::flush();
+
+        // 2nd request -> Must still recognize existing database record and return 200 with X-Idempotent-Replay
+        $secondResponse = $this->postJson('/api/v1/webhooks/calls', $payload);
+        $secondResponse->assertStatus(200)
+            ->assertJsonPath('meta.isDuplicate', true)
+            ->assertHeader('X-Idempotent-Replay', 'true');
+
+        $this->assertDatabaseCount('calls', 1);
+    }
 }
 

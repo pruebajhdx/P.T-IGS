@@ -28,6 +28,7 @@ apps/api/bootstrap/cache/*
 dist/
 build/
 *.tsbuildinfo
+.phpunit.result.cache
 
 # Database & local data
 *.sqlite

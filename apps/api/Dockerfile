@@ -23,6 +23,9 @@ COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
+# Enable concurrent worker threads for PHP CLI built-in server
+ENV PHP_CLI_SERVER_WORKERS=8
+
 # Copy application files from repository root context
 COPY apps/api .
 

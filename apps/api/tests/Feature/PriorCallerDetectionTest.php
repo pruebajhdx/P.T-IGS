@@ -69,5 +69,37 @@ class PriorCallerDetectionTest extends TestCase
             ->assertJsonPath('data.hasCalledBefore', false)
             ->assertJsonPath('data.previousCallsCount', 0);
     }
+
+    public function test_system_detects_recurrence_across_different_phone_formats(): void
+    {
+        // 1. First call with spaces: "+57 300 123 4567"
+        $firstPayload = [
+            'callId' => 'call-fmt-001',
+            'phoneNumber' => '+57 300 123 4567',
+            'agent' => 'agente-01',
+            'durationSeconds' => 100,
+            'recordingUrl' => 'https://grabaciones.ejemplo.com/fmt1.mp3',
+        ];
+
+        $firstRes = $this->postJson('/api/v1/webhooks/calls', $firstPayload);
+        $firstRes->assertStatus(201)
+            ->assertJsonPath('data.hasCalledBefore', false)
+            ->assertJsonPath('data.phoneNumber', '+573001234567');
+
+        // 2. Second call with clean compact format: "+573001234567"
+        $secondPayload = [
+            'callId' => 'call-fmt-002',
+            'phoneNumber' => '+573001234567',
+            'agent' => 'agente-02',
+            'durationSeconds' => 50,
+            'recordingUrl' => 'https://grabaciones.ejemplo.com/fmt2.mp3',
+        ];
+
+        $secondRes = $this->postJson('/api/v1/webhooks/calls', $secondPayload);
+        $secondRes->assertStatus(201)
+            ->assertJsonPath('data.hasCalledBefore', true)
+            ->assertJsonPath('data.previousCallsCount', 1)
+            ->assertJsonPath('data.phoneNumber', '+573001234567');
+    }
 }
 
