@@ -70,3 +70,4 @@ class PriorCallerDetectionTest extends TestCase
             ->assertJsonPath('data.previousCallsCount', 0);
     }
 }
+

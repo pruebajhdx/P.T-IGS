@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Send, Play, CheckCircle2, AlertTriangle, Copy } from 'lucide-react';
+import { X, Send, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { sendCallWebhook, WebhookPayload } from '../services/api';
 
 interface SimulateCallModalProps {
@@ -253,3 +253,4 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
     </div>
   );
 };
+

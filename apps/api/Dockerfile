@@ -24,10 +24,10 @@ COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # Copy application files
-COPY . .
+COPY apps/api .
 
 # Copy custom php.ini if needed
-COPY ../../docker/php/local.ini /usr/local/etc/php/conf.d/local.ini
+COPY docker/php/local.ini /usr/local/etc/php/conf.d/local.ini
 
 # Ensure entrypoint is executable
 RUN chmod +x docker-entrypoint.sh
@@ -35,3 +35,4 @@ RUN chmod +x docker-entrypoint.sh
 EXPOSE 8000
 
 ENTRYPOINT ["/var/www/html/docker-entrypoint.sh"]
+

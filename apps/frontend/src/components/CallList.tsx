@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
 import {
   Search,
-  Filter,
   Shield,
   ShieldAlert,
-  Play,
   Volume2,
   Clock,
   User,
-  Phone,
-  CheckCircle,
   ExternalLink,
 } from 'lucide-react';
 import { CallSession } from '../services/api';
@@ -33,7 +29,6 @@ export const CallList: React.FC<CallListProps> = ({
   spamFilter,
   onSpamFilterChange,
 }) => {
-  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const formatDuration = (totalSecs: number) => {
@@ -313,3 +308,4 @@ export const CallList: React.FC<CallListProps> = ({
     </div>
   );
 };
+

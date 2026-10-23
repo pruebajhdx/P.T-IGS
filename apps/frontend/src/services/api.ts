@@ -138,3 +138,4 @@ export function subscribeToCallsStream(
     if (eventSource) eventSource.close();
   };
 }
+

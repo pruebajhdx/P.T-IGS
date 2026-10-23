@@ -2,8 +2,8 @@
   "name": "@monorepo/contracts",
   "version": "1.0.0",
   "description": "Shared contracts, TypeScript types and JSON schemas for Incoming Calls system",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "files": [
     "dist",
     "src"

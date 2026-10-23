@@ -52,3 +52,4 @@ echo "=================================================="
 curl -s "$BASE_URL/calls/stats" | json_pp || curl -s "$BASE_URL/calls/stats"
 
 echo -e "\n\nPruebas finalizadas con éxito."
+

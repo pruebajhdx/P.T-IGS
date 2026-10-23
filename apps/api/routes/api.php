@@ -32,3 +32,4 @@ Route::prefix('v1')->group(function () {
     // Real-time Server-Sent Events (SSE) stream
     Route::get('/calls/stream', [CallStreamController::class, 'stream']);
 });
+

@@ -60,3 +60,4 @@ class MarkSpamTest extends TestCase
         $response->assertStatus(404);
     }
 }
+

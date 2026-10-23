@@ -54,3 +54,4 @@ class DomainCallTest extends TestCase
         Duration::fromSeconds(-5);
     }
 }
+

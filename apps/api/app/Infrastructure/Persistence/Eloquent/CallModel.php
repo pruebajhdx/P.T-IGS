@@ -35,3 +35,4 @@ final class CallModel extends Model
         'updated_at' => 'datetime',
     ];
 }
+

@@ -48,3 +48,4 @@ Write-Host "Status Code: $($res3.StatusCode)" -ForegroundColor Green
 Write-Host "Response Body: $($res3.Content)"
 
 Write-Host "`nPruebas finalizadas." -ForegroundColor Green
+

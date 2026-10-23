@@ -1,5 +1,5 @@
 import React from 'react';
-import { PhoneCall, Activity, RefreshCw, PlusCircle, ShieldCheck } from 'lucide-react';
+import { PhoneCall, RefreshCw, PlusCircle, ShieldCheck } from 'lucide-react';
 
 interface HeaderProps {
   streamStatus: 'connected' | 'reconnecting' | 'disconnected';
@@ -86,3 +86,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
