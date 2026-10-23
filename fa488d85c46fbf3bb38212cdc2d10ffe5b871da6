@@ -1,0 +1,4 @@
+Contexto detallado:
+- Tabs Segmentados Full-Width: Ajuste de layout en CallList para ocupar el 100% del contenedor sin barras de desplazamiento horizontales antiestéticas.
+- 0ms Real-Time Card Updates: Actualización inmediata de los componentes de tarjetas de llamadas al recibir paquetes de eventos SSE, eliminando cualquier latencia percibida en la interfaz.
+- Consistencia de Notificaciones: Ajustes finales en el contexto de notificaciones y utilidades de audio para feedback fluido.
