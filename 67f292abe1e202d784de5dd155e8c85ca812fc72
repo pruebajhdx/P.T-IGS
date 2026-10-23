@@ -1,0 +1,6 @@
+Contexto detallado:
+- Corrección de Warnings en Testing: Eliminación del aviso de Dotenv file_get_contents(/var/www/html/.env) garantizando la presencia del archivo base en el entrypoint de los contenedores Docker.
+- Testing Suite Extendido:
+  * ExtendedIdempotencyAndConcurrencyTest: Pruebas de ráfaga concurrente ('burst') con el mismo Call ID, validación de inserción única en base de datos y ciclo de vida de locks distribuidos de Redis.
+  * LoadBalancerAndObservabilityTest: Verificación de endpoints de salud (/api/v1/health), métricas de clúster (/api/v1/monitoring/cluster), latencias de Postgres/Redis, cálculo de estadísticas de llamadas y auditoría de logs.
+- Documentación: Actualización de README.md con la tabla técnica de cobertura de pruebas (18 tests y 144 aserciones pasando al 100%).
