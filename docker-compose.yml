@@ -1,0 +1,158 @@
+services:
+  # ==============================================================================
+  # NGINX LOAD BALANCER & REVERSE PROXY
+  # ==============================================================================
+  load-balancer:
+    image: nginx:1.27-alpine
+    container_name: calls-load-balancer
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api-1
+      - api-2
+      - frontend
+    networks:
+      - calls-network
+
+  # ==============================================================================
+  # LARAVEL API REPLICA 1
+  # ==============================================================================
+  api-1:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: calls-api-1
+    restart: unless-stopped
+    ports:
+      - "${API_1_PORT:-8001}:8000"
+    environment:
+      APP_NAME: "${APP_NAME:-CallsAPI} (Replica 1)"
+      APP_ENV: "${APP_ENV:-local}"
+      APP_KEY: "${APP_KEY:-base64:3p8R/K2M6lB9FvXz0Y1Q4sU7wE2aC5g8hJ9lZ0c1b3A=}"
+      APP_DEBUG: "${APP_DEBUG:-true}"
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      DB_CONNECTION: "${DB_CONNECTION:-pgsql}"
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_DATABASE: "${DB_DATABASE:-calls_db}"
+      DB_USERNAME: "${DB_USERNAME:-postgres}"
+      DB_PASSWORD: "${DB_PASSWORD:-postgres_secret}"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      INSTANCE_ID: "api-replica-1"
+    volumes:
+      - ./apps/api:/var/www/html
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - calls-network
+
+  # ==============================================================================
+  # LARAVEL API REPLICA 2
+  # ==============================================================================
+  api-2:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: calls-api-2
+    restart: unless-stopped
+    ports:
+      - "${API_2_PORT:-8002}:8000"
+    environment:
+      APP_NAME: "${APP_NAME:-CallsAPI} (Replica 2)"
+      APP_ENV: "${APP_ENV:-local}"
+      APP_KEY: "${APP_KEY:-base64:3p8R/K2M6lB9FvXz0Y1Q4sU7wE2aC5g8hJ9lZ0c1b3A=}"
+      APP_DEBUG: "${APP_DEBUG:-true}"
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      DB_CONNECTION: "${DB_CONNECTION:-pgsql}"
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_DATABASE: "${DB_DATABASE:-calls_db}"
+      DB_USERNAME: "${DB_USERNAME:-postgres}"
+      DB_PASSWORD: "${DB_PASSWORD:-postgres_secret}"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      INSTANCE_ID: "api-replica-2"
+    volumes:
+      - ./apps/api:/var/www/html
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - calls-network
+
+  # ==============================================================================
+  # REDIS DISTRIBUTED CACHE, LOCKS & PUB/SUB
+  # ==============================================================================
+  redis:
+    image: redis:7.4-alpine
+    container_name: calls-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - calls-network
+
+  # ==============================================================================
+  # POSTGRESQL DATABASE
+  # ==============================================================================
+  database:
+    image: postgres:16-alpine
+    container_name: calls-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${DB_DATABASE:-calls_db}"
+      POSTGRES_USER: "${DB_USERNAME:-postgres}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-postgres_secret}"
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-calls_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - calls-network
+
+  # ==============================================================================
+  # REACT FRONTEND
+  # ==============================================================================
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: calls-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    networks:
+      - calls-network
+
+networks:
+  calls-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

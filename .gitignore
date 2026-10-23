@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+vendor/
+.pnpm-store/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Laravel storage & cache
+apps/api/storage/*.key
+apps/api/storage/app/*
+!apps/api/storage/app/.gitignore
+apps/api/storage/framework/cache/*
+!apps/api/storage/framework/cache/.gitignore
+apps/api/storage/framework/sessions/*
+!apps/api/storage/framework/sessions/.gitignore
+apps/api/storage/framework/views/*
+!apps/api/storage/framework/views/.gitignore
+apps/api/storage/logs/*
+!apps/api/storage/logs/.gitignore
+apps/api/bootstrap/cache/*
+!apps/api/bootstrap/cache/.gitignore
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Database & local data
+*.sqlite
+*.sqlite-journal
+docker/data/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.qodo/
+
+# OS generated files
+.DS_Store
+Thumbs.db

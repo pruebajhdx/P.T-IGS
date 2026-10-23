@@ -1,0 +1,29 @@
+{
+  "name": "incoming-calls-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo para gestion de llamadas entrantes con Laravel, React, Redis y Nginx Load Balancer",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build:contracts": "npm run --workspace=packages/contracts build",
+    "dev:frontend": "npm run --workspace=apps/frontend dev",
+    "build:frontend": "npm run --workspace=apps/frontend build",
+    "docker:up": "docker-compose up -d --build",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "keywords": [
+    "laravel",
+    "react",
+    "redis",
+    "clean-architecture",
+    "idempotency",
+    "load-balancer",
+    "realtime"
+  ],
+  "author": "",
+  "license": "MIT"
+}
