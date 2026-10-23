@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monorepo.local/schemas/call-event.schema.json",
+  "title": "IncomingCallWebhookPayload",
+  "description": "Validation schema for incoming call telephony webhooks",
+  "type": "object",
+  "properties": {
+    "callId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Unique provider call identifier, e.g. c-10234"
+    },
+    "phoneNumber": {
+      "type": "string",
+      "minLength": 7,
+      "maxLength": 25,
+      "pattern": "^\\+?[0-9\\s\\-\\(\\)]{7,25}$",
+      "description": "Caller phone number with optional country code"
+    },
+    "agent": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Agent handle or identifier, e.g. agente-07"
+    },
+    "durationSeconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 86400,
+      "description": "Duration in seconds"
+    },
+    "recordingUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Accessible audio URL for the call recording"
+    }
+  },
+  "required": [
+    "callId",
+    "phoneNumber",
+    "agent",
+    "durationSeconds",
+    "recordingUrl"
+  ],
+  "additionalProperties": false
+}

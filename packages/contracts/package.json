@@ -1,0 +1,26 @@
+{
+  "name": "@monorepo/contracts",
+  "version": "1.0.0",
+  "description": "Shared contracts, TypeScript types and JSON schemas for Incoming Calls system",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "contracts",
+    "types",
+    "dto",
+    "schema"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
