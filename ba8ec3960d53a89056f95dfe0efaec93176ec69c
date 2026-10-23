@@ -1,0 +1,4 @@
+Contexto detallado:
+- Reactividad Instantánea: Sincronización en tiempo real del estado de spam en la lista de llamadas sin recargar página ni desfasar métricas.
+- Eliminación de Ghost Replay en SSE: Corrección en CallStreamController para no retransmitir eventos históricos obsoletos al reconectar el canal.
+- Integridad de Estadísticas: Protección contra drift en contadores de llamadas atendidas, activas y tasa de spam en el dashboard.
