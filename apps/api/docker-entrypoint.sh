@@ -9,6 +9,11 @@ if [ ! -f "vendor/autoload.php" ]; then
     composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
+# Ensure .env file exists so dotenv does not trigger warnings
+if [ ! -f ".env" ]; then
+    touch .env
+fi
+
 # Ensure storage directories exist and have proper permissions
 mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
 chmod -R 777 storage bootstrap/cache

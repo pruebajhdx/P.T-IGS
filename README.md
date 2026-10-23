@@ -124,18 +124,24 @@ Cada llamada evalúa el historial previo del número telefónico consultando lla
 
 ---
 
-## 🧪 6. Pruebas Automatizadas
+## 🧪 6. Pruebas Automatizadas (Testing Suite)
 
-Se desarrollaron pruebas unitarias y de integración que cubren los requerimientos solicitados:
-1. `WebhookIdempotencyTest`: Verifica el registro inicial (201 Created) y que llamadas idénticas subsiguientes sean reconocidas como duplicadas (200 OK con `X-Idempotent-Replay: true`) sin duplicar filas en base de datos.
-2. `PriorCallerDetectionTest`: Verifica que llamadas subsiguientes del mismo número marquen correctamente `hasCalledBefore: true` y el contador de llamadas previas.
-3. `MarkSpamTest`: Verifica el marcado y desmarcado de una llamada como spam vía `PATCH /api/v1/calls/{id}/spam`.
-4. `DomainCallTest`: Pruebas unitarias de las entidades y objetos de valor del dominio (validación de número, duración y reglas de invariantes).
+La suite de pruebas automatizadas está diseñada con **PHPUnit 11** en Laravel y valida de extremo a extremo los casos de uso de alta concurrencia, idempotencia en dos niveles y observabilidad del clúster:
+
+| Suite / Archivo de Test | Tipo | Cobertura y Casos Evaluados |
+| :--- | :--- | :--- |
+| `DomainCallTest` | Unitario | Entidades puras y Value Objects (`PhoneNumber`, `Duration`, `CallId`), normalización internacional e invariantes de dominio. |
+| `WebhookIdempotencyTest` | Feature | Registro inicial (201 Created), respuesta idempotente (200 OK con `X-Idempotent-Replay: true`), payloads inválidos (422) y resiliencia ante desalojo de Redis. |
+| `ExtendedIdempotencyAndConcurrencyTest` | Feature | Ráfagas de llamadas concurrentes simultáneas (`burst`), verificación de inserción atómica única en base de datos y ciclo de vida de locks distribuidos de Redis. |
+| `PriorCallerDetectionTest` | Feature | Identificación instantánea de llamantes recurrentes (`hasCalledBefore: true`), cálculo acumulativo de llamadas previas y normalización de formatos telefónicos heterogéneos. |
+| `MarkSpamTest` | Feature | Alternancia y mutación reactiva de spam (`PATCH /api/v1/calls/{id}/spam`) y control de excepciones (404 Not Found). |
+| `LoadBalancerAndObservabilityTest` | Feature | Endpoints de observabilidad del clúster (`/api/v1/monitoring/cluster`), verificación de latencias de Postgres/Redis, health checks del balanceador e integridad de métricas y logs. |
 
 ### Ejecución de Pruebas:
 ```bash
 docker-compose exec api-1 php artisan test
 ```
+*Todas las pruebas (18 tests y 144 aserciones) se ejecutan de manera aislada con `RefreshDatabase` y flushing atómico de Redis.*
 
 ---
 
