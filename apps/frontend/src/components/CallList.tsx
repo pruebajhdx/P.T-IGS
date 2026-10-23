@@ -12,6 +12,9 @@ import { CallSession } from '../services/api';
 
 interface CallListProps {
   calls: CallSession[];
+  allCallsCount?: number;
+  validCallsCount?: number;
+  spamCallsCount?: number;
   onToggleSpam: (id: string, isSpam: boolean) => Promise<void>;
   isLoading: boolean;
   searchTerm: string;
@@ -22,6 +25,9 @@ interface CallListProps {
 
 export const CallList: React.FC<CallListProps> = ({
   calls,
+  allCallsCount,
+  validCallsCount,
+  spamCallsCount,
   onToggleSpam,
   isLoading,
   searchTerm,
@@ -81,7 +87,7 @@ export const CallList: React.FC<CallListProps> = ({
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            Todas ({calls.length})
+            Todas ({allCallsCount ?? calls.length})
           </button>
           <button
             onClick={() => onSpamFilterChange('false')}
@@ -91,7 +97,7 @@ export const CallList: React.FC<CallListProps> = ({
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            Válidas
+            Válidas {validCallsCount !== undefined ? `(${validCallsCount})` : ''}
           </button>
           <button
             onClick={() => onSpamFilterChange('true')}
@@ -101,7 +107,7 @@ export const CallList: React.FC<CallListProps> = ({
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            Spam
+            Spam {spamCallsCount !== undefined ? `(${spamCallsCount})` : ''}
           </button>
         </div>
       </div>
@@ -124,7 +130,15 @@ export const CallList: React.FC<CallListProps> = ({
             {calls.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-slate-400">
-                  {isLoading ? 'Cargando llamadas...' : 'No se encontraron sesiones de llamada.'}
+                  {isLoading ? 'Cargando llamadas...' : (
+                    spamFilter === 'true'
+                      ? 'No hay llamadas marcadas como Spam.'
+                      : spamFilter === 'false'
+                      ? 'No hay llamadas válidas.'
+                      : searchTerm
+                      ? `No se encontraron llamadas que coincidan con "${searchTerm}".`
+                      : 'No se encontraron sesiones de llamada.'
+                  )}
                 </td>
               </tr>
             ) : (
@@ -235,7 +249,15 @@ export const CallList: React.FC<CallListProps> = ({
       <div className="block lg:hidden divide-y divide-slate-800">
         {calls.length === 0 ? (
           <div className="text-center py-8 text-slate-400 text-xs">
-            {isLoading ? 'Cargando llamadas...' : 'No se encontraron sesiones de llamada.'}
+            {isLoading ? 'Cargando llamadas...' : (
+              spamFilter === 'true'
+                ? 'No hay llamadas marcadas como Spam.'
+                : spamFilter === 'false'
+                ? 'No hay llamadas válidas.'
+                : searchTerm
+                ? `No se encontraron llamadas que coincidan con "${searchTerm}".`
+                : 'No se encontraron sesiones de llamada.'
+            )}
           </div>
         ) : (
           calls.map((call) => (

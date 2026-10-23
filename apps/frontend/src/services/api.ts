@@ -13,8 +13,9 @@ export type { ToggleSpamPayload, ApiResponse };
 
 const API_BASE = '/api/v1';
 
-export async function fetchCalls(filterParams: { search?: string; is_spam?: string } = {}): Promise<CallSession[]> {
+export async function fetchCalls(filterParams: { search?: string; is_spam?: string; limit?: number } = {}): Promise<CallSession[]> {
   const params = new URLSearchParams();
+  params.set('limit', String(filterParams.limit || 100));
   if (filterParams.search) params.set('search', filterParams.search);
   if (filterParams.is_spam !== undefined && filterParams.is_spam !== '') {
     params.set('is_spam', filterParams.is_spam);

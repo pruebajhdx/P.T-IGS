@@ -29,7 +29,7 @@ final class CallController extends Controller
             'agent' => $request->query('agent'),
         ];
 
-        $limit = min(100, max(1, (int) $request->query('limit', 50)));
+        $limit = min(200, max(1, (int) $request->query('limit', 100)));
         $offset = max(0, (int) $request->query('offset', 0));
 
         $calls = $this->listCallsUseCase->execute($filters, $limit, $offset);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Header } from './components/Header';
 import { StatsOverview } from './components/StatsOverview';
 import { CallList } from './components/CallList';
@@ -14,7 +14,7 @@ import {
 } from './services/api';
 
 export const App: React.FC = () => {
-  const [calls, setCalls] = useState<CallSession[]>([]);
+  const [allCalls, setAllCalls] = useState<CallSession[]>([]);
   const [stats, setStats] = useState<CallStats>({
     totalCalls: 0,
     recurringCalls: 0,
@@ -30,15 +30,15 @@ export const App: React.FC = () => {
   const [isSimulateOpen, setIsSimulateOpen] = useState(false);
   const [isMonitoringOpen, setIsMonitoringOpen] = useState(false);
 
-  // Load calls and stats from API
+  // Load all calls and stats from API
   const loadData = useCallback(async (isSilent = false) => {
     if (!isSilent) setIsRefreshing(true);
     try {
       const [fetchedCalls, fetchedStats] = await Promise.all([
-        fetchCalls({ search: searchTerm, is_spam: spamFilter }),
+        fetchCalls({ limit: 100 }),
         fetchStats(),
       ]);
-      setCalls(fetchedCalls);
+      setAllCalls(fetchedCalls);
       setStats(fetchedStats);
     } catch (err) {
       console.error('Failed to load calls/stats', err);
@@ -46,9 +46,9 @@ export const App: React.FC = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [searchTerm, spamFilter]);
+  }, []);
 
-  // Initial fetch and on filter change
+  // Initial fetch
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -60,21 +60,17 @@ export const App: React.FC = () => {
         if (event === 'connected') {
           if (data?.instance) setServedBy(data.instance);
         } else if (event === 'call.created') {
-          // Prepend new call to list without full reload
-          setCalls((prev) => {
-            if (prev.some((c) => c.callId === data.callId)) return prev;
+          // Prepend new call to list without full reload, avoiding duplicates
+          setAllCalls((prev) => {
+            if (prev.some((c) => c.callId === data.callId || c.id === data.id)) return prev;
             return [data, ...prev];
           });
-          // Update stats incrementally
-          setStats((prev) => ({
-            ...prev,
-            totalCalls: prev.totalCalls + 1,
-            recurringCalls: data.hasCalledBefore ? prev.recurringCalls + 1 : prev.recurringCalls,
-          }));
+          // Synchronize stats directly with the backend to ensure 100% precision without phantom increments
+          fetchStats().then(setStats).catch(() => {});
         } else if (event === 'call.spam_toggled') {
           // Update call spam status in-place
-          setCalls((prev) =>
-            prev.map((c) => (c.id === data.id ? { ...c, isSpam: data.isSpam } : c))
+          setAllCalls((prev) =>
+            prev.map((c) => (c.id === data.id || c.callId === data.callId ? { ...c, isSpam: data.isSpam } : c))
           );
           // Refresh stats accurately
           fetchStats().then(setStats).catch(() => {});
@@ -91,14 +87,14 @@ export const App: React.FC = () => {
   }, []);
 
   const handleToggleSpam = async (id: string, isSpam: boolean) => {
-    // Optimistic UI update
-    setCalls((prev) =>
+    // Instant optimistic UI update
+    setAllCalls((prev) =>
       prev.map((c) => (c.id === id ? { ...c, isSpam } : c))
     );
 
     try {
       const updated = await toggleCallSpam(id, isSpam);
-      setCalls((prev) =>
+      setAllCalls((prev) =>
         prev.map((c) => (c.id === id ? updated : c))
       );
       const newStats = await fetchStats();
@@ -109,6 +105,30 @@ export const App: React.FC = () => {
       loadData(true);
     }
   };
+
+  // Instant reactive client-side filtering without reloading or network roundtrips
+  const filteredCalls = useMemo(() => {
+    return allCalls.filter((call) => {
+      // 1. Spam filter:
+      if (spamFilter === 'true' && !call.isSpam) return false;
+      if (spamFilter === 'false' && call.isSpam) return false;
+
+      // 2. Search term:
+      if (searchTerm.trim()) {
+        const query = searchTerm.toLowerCase().trim();
+        const matchesPhone = call.phoneNumber.toLowerCase().includes(query);
+        const matchesAgent = call.agent.toLowerCase().includes(query);
+        const matchesCallId = call.callId.toLowerCase().includes(query);
+        if (!matchesPhone && !matchesAgent && !matchesCallId) return false;
+      }
+
+      return true;
+    });
+  }, [allCalls, spamFilter, searchTerm]);
+
+  // Dynamic counts for tab badges
+  const validCallsCount = useMemo(() => allCalls.filter((c) => !c.isSpam).length, [allCalls]);
+  const spamCallsCount = useMemo(() => allCalls.filter((c) => c.isSpam).length, [allCalls]);
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
@@ -127,7 +147,10 @@ export const App: React.FC = () => {
 
         {/* Real-time Call List & Controls */}
         <CallList
-          calls={calls}
+          calls={filteredCalls}
+          allCallsCount={allCalls.length}
+          validCallsCount={validCallsCount}
+          spamCallsCount={spamCallsCount}
           onToggleSpam={handleToggleSpam}
           isLoading={isLoading}
           searchTerm={searchTerm}

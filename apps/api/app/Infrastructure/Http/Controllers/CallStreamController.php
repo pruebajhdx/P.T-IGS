@@ -36,27 +36,25 @@ final class CallStreamController extends Controller
             // Keep track of event IDs already delivered to this client to prevent duplicates
             $seenEventIds = [];
 
-            // Send recent events buffer if available so client state is immediately up to date
+            // Seed $seenEventIds with all currently existing events in Redis buffer
+            // so we DO NOT replay past events that the client already loaded from PostgreSQL
             try {
-                $recentEvents = Redis::lrange(RedisBroadcastService::RECENT_EVENTS_KEY, 0, 9);
-                if (!empty($recentEvents)) {
-                    foreach (array_reverse($recentEvents) as $eventJson) {
+                $existingEvents = Redis::lrange(RedisBroadcastService::RECENT_EVENTS_KEY, 0, 49);
+                if (!empty($existingEvents)) {
+                    foreach ($existingEvents as $eventJson) {
                         $parsed = json_decode($eventJson, true);
-                        if ($parsed && isset($parsed['event'], $parsed['data'])) {
+                        if ($parsed) {
                             $id = $parsed['id'] ?? md5($eventJson);
                             $seenEventIds[$id] = true;
-                            echo "event: {$parsed['event']}\n";
-                            echo "data: " . json_encode($parsed['data']) . "\n\n";
                         }
                     }
-                    flush();
                 }
             } catch (\Throwable) {
                 // Ignore if redis cache is empty or warming up
             }
 
             $startTime = time();
-            $maxExecutionTime = 55; // Keep connection for up to 55s per stream cycle, then let client auto-reconnect
+            $maxExecutionTime = 300; // Keep persistent SSE stream for up to 5 minutes, with keepalive comments
             $lastKeepAlive = time();
 
             // Continuous streaming loop checking for live events or heartbeats
