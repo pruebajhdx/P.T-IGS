@@ -8,49 +8,93 @@ import {
   Volume2,
   VolumeX,
   Zap,
+  LayoutDashboard,
+  History,
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 
+export type ActiveTab = 'dashboard' | 'history';
+
 interface HeaderProps {
+  currentTab: ActiveTab;
+  onTabChange: (tab: ActiveTab) => void;
   streamStatus: 'connected' | 'reconnecting' | 'disconnected';
   servedBy?: string;
   onRefresh: () => void;
   onOpenSimulate: () => void;
   onOpenMonitoring: () => void;
   isRefreshing: boolean;
+  totalCallsCount: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  currentTab,
+  onTabChange,
   streamStatus,
   servedBy,
   onRefresh,
   onOpenSimulate,
   onOpenMonitoring,
   isRefreshing,
+  totalCallsCount,
 }) => {
   const { isSoundMuted, toggleSound, isBatchRunning, batchProgress } = useNotifications();
 
   return (
     <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 px-4 lg:px-8 py-3.5 transition-colors">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Title & Brand */}
-        <div className="flex items-center gap-3.5 w-full md:w-auto">
-          <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-sky-500/25 text-white ring-1 ring-white/20">
-            <PhoneCall className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                CallCenter <span className="text-sky-400">Live</span>
-              </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30 uppercase tracking-wider">
-                Cluster v1.0
-              </span>
+        {/* Title, Brand & Navigation Links */}
+        <div className="flex items-center gap-6 w-full md:w-auto">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-sky-500/25 text-white ring-1 ring-white/20">
+              <PhoneCall className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Gestión reactiva de telefonía con balanceo Nginx, réplicas PHP Octane y caché Redis
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                  CallCenter <span className="text-sky-400">Live</span>
+                </h1>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30 uppercase tracking-wider">
+                  Cluster v1.0
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">
+                Gestión reactiva de telefonía con balanceo Nginx, réplicas PHP y caché Redis
+              </p>
+            </div>
           </div>
+
+          {/* Navigation Bar / Tabs */}
+          <nav className="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => onTabChange('dashboard')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                currentTab === 'dashboard'
+                  ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Dashboard en Vivo</span>
+            </button>
+
+            <button
+              onClick={() => onTabChange('history')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                currentTab === 'history'
+                  ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <History className="w-4 h-4" />
+              <span>Registro Histórico</span>
+              {totalCallsCount > 0 && (
+                <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-800 text-slate-300 font-mono">
+                  {totalCallsCount}
+                </span>
+              )}
+            </button>
+          </nav>
         </div>
 
         {/* Live Status Indicators & Action Buttons */}
@@ -73,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               />
             </span>
-            <span>{streamStatus === 'connected' ? 'En Vivo (SSE Activo)' : 'Reconectando Stream...'}</span>
+            <span>{streamStatus === 'connected' ? 'En Vivo' : 'Reconectando...'}</span>
           </div>
 
           {/* Node Served By indicator */}
@@ -104,7 +148,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/50 hover:bg-indigo-900/50 text-indigo-300 border border-indigo-800/60 text-xs font-medium transition hover:border-indigo-600"
           >
             <Activity className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">Monitoreo Cluster</span>
+            <span className="hidden sm:inline">Monitoreo</span>
           </button>
 
           {/* Manual Refresh button */}
@@ -143,4 +187,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
