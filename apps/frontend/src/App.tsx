@@ -120,7 +120,7 @@ const MainDashboard: React.FC = () => {
 
         // Feedback toast notification
         addNotification({
-          type: isSpam ? 'spam_alert' : 'info',
+          type: isSpam ? 'warning' : 'success',
           title: isSpam ? 'Llamada Marcada como Spam' : 'Llamada Desmarcada de Spam',
           message: `El número ${updated.phoneNumber} ha sido actualizado correctamente.`,
           durationMs: 3500,
