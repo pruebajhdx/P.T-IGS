@@ -41,5 +41,5 @@ php artisan migrate --force || true
 export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-8}"
 
 echo "Starting Laravel application with ${PHP_CLI_SERVER_WORKERS} workers on port 8000..."
-exec php artisan serve --host=0.0.0.0 --port=8000
+exec php artisan serve --host=0.0.0.0 --port=8000 --no-reload
 
