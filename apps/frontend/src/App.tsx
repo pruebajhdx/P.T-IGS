@@ -37,21 +37,32 @@ const MainDashboard: React.FC = () => {
   const [isSimulateOpen, setIsSimulateOpen] = useState(false);
   const [isMonitoringOpen, setIsMonitoringOpen] = useState(false);
 
-  // Load all calls and stats from API
-  const loadData = useCallback(async (isSilent = false) => {
+  // Load all calls and stats from API with exponential retry for warm-up resilience
+  const loadData = useCallback(async (isSilent = false, maxRetries = 4, delayMs = 1000) => {
     if (!isSilent) setIsRefreshing(true);
-    try {
-      const [fetchedCalls, fetchedStats] = await Promise.all([
-        fetchCalls({ limit: 200 }),
-        fetchStats(),
-      ]);
-      setAllCalls(fetchedCalls);
-      setStats(fetchedStats);
-    } catch (err) {
-      console.error('Failed to load calls/stats', err);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        const [fetchedCalls, fetchedStats] = await Promise.all([
+          fetchCalls({ limit: 200 }),
+          fetchStats(),
+        ]);
+        setAllCalls(fetchedCalls);
+        setStats(fetchedStats);
+        setIsLoading(false);
+        setIsRefreshing(false);
+        return;
+      } catch (err) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          console.error('Failed to load calls/stats after retries', err);
+          setIsLoading(false);
+          setIsRefreshing(false);
+        } else {
+          // Wait before next retry to give API time to warm up
+          await new Promise((res) => setTimeout(res, delayMs * attempt));
+        }
+      }
     }
   }, []);
 
@@ -66,6 +77,8 @@ const MainDashboard: React.FC = () => {
       (event, data) => {
         if (event === 'connected') {
           if (data?.instance) setServedBy(data.instance);
+          // Automatically re-sync calls and stats as soon as the SSE pipeline confirms active cluster connectivity
+          loadData(true);
         } else if (event === 'call.created') {
           // Prepend new call to list without full reload, avoiding duplicates
           setAllCalls((prev) => {
