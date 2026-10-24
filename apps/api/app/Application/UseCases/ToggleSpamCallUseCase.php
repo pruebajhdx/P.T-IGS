@@ -9,13 +9,11 @@ use App\Domain\Events\CallSpamToggledDomainEvent;
 use App\Domain\Exceptions\CallNotFoundException;
 use App\Domain\Repositories\CallRepositoryInterface;
 use App\Domain\ValueObjects\CallId;
-use App\Infrastructure\Services\RedisIdempotencyService;
 
 final class ToggleSpamCallUseCase
 {
     public function __construct(
-        private readonly CallRepositoryInterface $callRepository,
-        private readonly RedisIdempotencyService $idempotencyService
+        private readonly CallRepositoryInterface $callRepository
     ) {
     }
 
@@ -40,10 +38,7 @@ final class ToggleSpamCallUseCase
 
         $updatedCall = $this->callRepository->update($call);
 
-        // Invalidate cached idempotency response so re-queries reflect the updated spam state
-        $this->idempotencyService->invalidate($updatedCall->callId()->value());
-
-        // Dispatch domain event for spam status change
+        // Dispatch domain event for spam status change (listeners handle realtime broadcasting and cache invalidation)
         event(new CallSpamToggledDomainEvent($updatedCall, $isSpam));
 
         return CallResponseDTO::fromDomain($updatedCall);

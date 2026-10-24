@@ -34,9 +34,14 @@ until nc -z -v -w3 "${REDIS_HOST:-redis}" "${REDIS_PORT:-6379}"; do
 done
 echo "Redis is ready!"
 
-# Run database migrations
-echo "Running database migrations..."
-php artisan migrate --force || true
+# Run database migrations safely (designated primary replica runs migrations to prevent concurrent race conditions)
+if [ "${INSTANCE_ID:-api-replica-1}" = "api-replica-1" ]; then
+    echo "Running database migrations on primary node (${INSTANCE_ID})..."
+    php artisan migrate --force
+else
+    echo "Secondary node (${INSTANCE_ID}) waiting 2s for primary migration to finalize..."
+    sleep 2
+fi
 
 export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-8}"
 

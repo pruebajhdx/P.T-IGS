@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Entities\Call;
+use App\Domain\Repositories\CallMetricsRepositoryInterface;
 use App\Domain\Repositories\CallRepositoryInterface;
 use App\Domain\ValueObjects\CallId;
 use App\Domain\ValueObjects\Duration;
@@ -15,7 +16,7 @@ use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-final class EloquentCallRepository implements CallRepositoryInterface
+final class EloquentCallRepository implements CallRepositoryInterface, CallMetricsRepositoryInterface
 {
     public function save(Call $call): Call
     {

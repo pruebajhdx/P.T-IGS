@@ -93,7 +93,7 @@ final class ClusterMonitoringController extends Controller
             : null;
 
         // 5. Node instance info
-        $currentInstance = env('INSTANCE_ID', gethostname());
+        $currentInstance = config('app.instance_id', gethostname());
         $memoryUsage = round(memory_get_usage(true) / 1024 / 1024, 2);
         $peakMemory = round(memory_get_peak_usage(true) / 1024 / 1024, 2);
 
@@ -194,7 +194,7 @@ final class ClusterMonitoringController extends Controller
     public function triggerTestError(Request $request): JsonResponse
     {
         $errorMessage = $request->input('message', 'Excepción de prueba para verificación de monitoreo y Sentry');
-        $instance = env('INSTANCE_ID', gethostname());
+        $instance = config('app.instance_id', gethostname());
 
         Log::error("[MONITORING-TEST-AUDIT] {$errorMessage}", [
             'triggered_by' => 'Admin Test via Dashboard',

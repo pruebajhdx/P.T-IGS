@@ -23,12 +23,15 @@ final class CallStreamController extends Controller
             echo ":" . str_repeat(" ", 2048) . "\n\n";
             flush();
 
+            // Send retry interval instruction to browser EventSource (1 second)
+            echo "retry: 1000\n\n";
+
             // Send initial connection handshake event
             echo "event: connected\n";
             echo "data: " . json_encode([
                 'status' => 'connected',
                 'timestamp' => (new \DateTimeImmutable())->format(DATE_ATOM),
-                'instance' => env('INSTANCE_ID', gethostname()),
+                'instance' => config('app.instance_id', gethostname()),
             ]) . "\n\n";
 
             flush();
@@ -54,7 +57,8 @@ final class CallStreamController extends Controller
             }
 
             $startTime = time();
-            $maxExecutionTime = 300; // Keep persistent SSE stream for up to 5 minutes, with keepalive comments
+            // 45s connection window: releases worker thread periodically while browser reconnects in ~1s
+            $maxExecutionTime = (int) env('SSE_MAX_EXECUTION_TIME', 45);
             $lastKeepAlive = time();
 
             // Continuous streaming loop checking for live events or heartbeats

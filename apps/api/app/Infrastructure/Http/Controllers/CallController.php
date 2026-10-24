@@ -39,7 +39,7 @@ final class CallController extends Controller
             'data' => array_map(fn ($dto) => $dto->toArray(), $calls),
             'meta' => [
                 'count' => count($calls),
-                'servedBy' => env('INSTANCE_ID', gethostname()),
+                'servedBy' => config('app.instance_id', gethostname()),
             ],
         ]);
     }
@@ -52,7 +52,7 @@ final class CallController extends Controller
             'success' => true,
             'data' => $stats->toArray(),
             'meta' => [
-                'servedBy' => env('INSTANCE_ID', gethostname()),
+                'servedBy' => config('app.instance_id', gethostname()),
             ],
         ]);
     }
@@ -86,7 +86,7 @@ final class CallController extends Controller
                 'message' => $isSpam ? 'Call marked as spam' : 'Call unmarked as spam',
                 'data' => $callArray,
                 'meta' => [
-                    'servedBy' => env('INSTANCE_ID', gethostname()),
+                    'servedBy' => config('app.instance_id', gethostname()),
                 ],
             ]);
         } catch (CallNotFoundException $e) {

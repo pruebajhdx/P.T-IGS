@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Controllers;
 
-use App\Application\DTOs\IncomingCallDTO;
 use App\Application\DTOs\CallResponseDTO;
+use App\Application\DTOs\IncomingCallDTO;
 use App\Application\UseCases\RegisterIncomingCallUseCase;
 use App\Domain\Repositories\CallRepositoryInterface;
 use App\Domain\ValueObjects\CallId;
+use App\Infrastructure\Http\Requests\StoreIncomingCallRequest;
 use App\Infrastructure\Services\RedisIdempotencyService;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 
@@ -26,42 +26,16 @@ final class CallWebhookController extends Controller
     ) {
     }
 
-    public function handle(Request $request): JsonResponse
+    public function handle(StoreIncomingCallRequest $request): JsonResponse
     {
-        // Flexible support for camelCase (matching prompt image) and snake_case
-        $input = [
-            'callId' => $request->input('callId') ?? $request->input('call_id'),
-            'phoneNumber' => $request->input('phoneNumber') ?? $request->input('phone_number'),
-            'agent' => $request->input('agent'),
-            'durationSeconds' => $request->input('durationSeconds') ?? $request->input('duration_seconds'),
-            'recordingUrl' => $request->input('recordingUrl') ?? $request->input('recording_url'),
-        ];
-
-        $validator = validator($input, [
-            'callId' => ['required', 'string', 'max:100'],
-            'phoneNumber' => ['required', 'string', 'regex:/^\+?[0-9\s\-\(\)\.]{7,25}$/'],
-            'agent' => ['required', 'string', 'max:100'],
-            'durationSeconds' => ['required', 'integer', 'min:0'],
-            'recordingUrl' => ['required', 'url'],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $validated = $validator->validated();
-        $callId = (string) $validated['callId'];
+        $dto = $request->toDTO();
+        $callId = $dto->callId;
 
         try {
             // Process through Redis Idempotency Service
             $idempotencyResult = $this->idempotencyService->execute(
                 callId: $callId,
-                action: function () use ($validated): array {
-                    $dto = IncomingCallDTO::fromArray($validated);
+                action: function () use ($dto): array {
                     $result = $this->registerIncomingCallUseCase->execute($dto);
                     return [
                         'call' => $result->call->toArray(),
@@ -76,7 +50,7 @@ final class CallWebhookController extends Controller
             $dbDuplicate = isset($rawPayload['is_duplicate']) ? (bool) $rawPayload['is_duplicate'] : false;
             $isDuplicate = $idempotencyResult['is_duplicate'] || $dbDuplicate;
 
-            $instanceId = env('INSTANCE_ID', gethostname());
+            $instanceId = config('app.instance_id', gethostname());
 
             $statusCode = $isDuplicate ? 200 : 201;
 
@@ -100,7 +74,7 @@ final class CallWebhookController extends Controller
             $existingCall = $this->callRepository->findByCallId(CallId::fromString($callId));
             if ($existingCall !== null) {
                 $callData = CallResponseDTO::fromDomain($existingCall)->toArray();
-                $instanceId = env('INSTANCE_ID', gethostname());
+                $instanceId = config('app.instance_id', gethostname());
 
                 return response()->json([
                     'success' => true,

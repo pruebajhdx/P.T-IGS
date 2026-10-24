@@ -17,7 +17,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/health', function () {
         return response()->json([
             'status' => 'healthy',
-            'instance' => env('INSTANCE_ID', gethostname()),
+            'instance' => config('app.instance_id', gethostname()),
             'timestamp' => now()->toIso8601String(),
         ]);
     });

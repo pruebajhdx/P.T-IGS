@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Entities;
 
-use App\Domain\ValueObjects\CallDuration;
 use App\Domain\ValueObjects\CallId;
 use App\Domain\ValueObjects\Duration;
 use App\Domain\ValueObjects\PhoneNumber;
