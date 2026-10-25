@@ -126,7 +126,10 @@ Cada llamada evalúa el historial previo del número telefónico consultando lla
 
 ## 🧪 6. Pruebas Automatizadas (Testing Suite)
 
-La suite de pruebas automatizadas está diseñada con **PHPUnit 11** en Laravel y valida de extremo a extremo los casos de uso de alta concurrencia, idempotencia en dos niveles y observabilidad del clúster:
+El proyecto cuenta con una cobertura integral de pruebas automatizadas tanto en el **Backend (PHPUnit / Laravel)** como en el **Frontend (Vitest / React Testing Library)**:
+
+### A. Backend Testing Suite (PHPUnit 11)
+Valida de extremo a extremo los casos de uso de alta concurrencia, idempotencia en dos niveles y observabilidad del clúster:
 
 | Suite / Archivo de Test | Tipo | Cobertura y Casos Evaluados |
 | :--- | :--- | :--- |
@@ -137,11 +140,33 @@ La suite de pruebas automatizadas está diseñada con **PHPUnit 11** en Laravel 
 | `MarkSpamTest` | Feature | Alternancia y mutación reactiva de spam (`PATCH /api/v1/calls/{id}/spam`) y control de excepciones (404 Not Found). |
 | `LoadBalancerAndObservabilityTest` | Feature | Endpoints de observabilidad del clúster (`/api/v1/monitoring/cluster`), verificación de latencias de Postgres/Redis, health checks del balanceador e integridad de métricas y logs. |
 
-### Ejecución de Pruebas:
+Ejecución de pruebas de backend:
 ```bash
 docker-compose exec api-1 php artisan test
+# O desde la raíz del monorepo:
+npm run test:api
 ```
-*Todas las pruebas (18 tests y 144 aserciones) se ejecutan de manera aislada con `RefreshDatabase` y flushing atómico de Redis.*
+
+### B. Frontend Testing Suite (Vitest & React Testing Library)
+Valida los componentes de la interfaz de usuario, renderizado de estados, cálculos de KPIs y consumo del servicio de API:
+
+| Suite / Archivo de Test | Tipo | Cobertura y Casos Evaluados |
+| :--- | :--- | :--- |
+| `StatsOverview.test.tsx` | Componente | Renderizado de métricas KPI (Total, Recurrencia, Spam, Duración), cálculo de porcentajes y tolerancia ante ceros (división por cero). |
+| `CallList.test.tsx` | Componente | Renderizado de filas de llamadas, badges de recurrencia (`Primerizo` vs `Recurrente`), botones de marcado de Spam y eventos click reactivos. |
+| `api.test.ts` | Unitario Red | Métodos de consumo HTTP (`fetchCalls`, `fetchStats`, `toggleCallSpam`) y procesamiento de metadatos de duplicados en `sendCallWebhook`. |
+
+Ejecución de pruebas de frontend:
+```bash
+npm run test:frontend
+# O directamente dentro de apps/frontend:
+cd apps/frontend && npm test
+```
+
+Para correr toda la suite de pruebas del monorepo:
+```bash
+npm test
+```
 
 ---
 

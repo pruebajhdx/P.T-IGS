@@ -9,6 +9,11 @@ export default defineConfig({
       '@monorepo/contracts': path.resolve(__dirname, '../../packages/contracts/src'),
     },
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/tests/setup.ts',
+  },
   server: {
     host: '0.0.0.0',
     port: 3000,
@@ -19,5 +24,4 @@ export default defineConfig({
       },
     },
   },
-});
-
+} as any);

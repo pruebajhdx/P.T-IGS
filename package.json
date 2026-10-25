@@ -11,6 +11,9 @@
     "build:contracts": "npm run --workspace=packages/contracts build",
     "dev:frontend": "npm run --workspace=apps/frontend dev",
     "build:frontend": "npm run --workspace=apps/frontend build",
+    "test:frontend": "npm run --workspace=apps/frontend test",
+    "test:api": "docker-compose exec -T api-1 php artisan test",
+    "test": "npm run test:frontend",
     "docker:up": "docker-compose up -d --build",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"
