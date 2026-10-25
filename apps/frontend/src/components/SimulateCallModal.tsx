@@ -9,8 +9,11 @@ import {
   Square,
   Sliders,
   Sparkles,
+  ServerCrash,
+  Activity,
+  RotateCw,
 } from 'lucide-react';
-import { sendCallWebhook, WebhookPayload, CallSession } from '../services/api';
+import { sendCallWebhook, simulateReplicaOutage, WebhookPayload, CallSession } from '../services/api';
 import { useNotifications } from '../context/NotificationContext';
 
 interface SimulateCallModalProps {
@@ -32,8 +35,14 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
     addNotification,
   } = useNotifications();
 
-  // Tabs: 'single' | 'batch'
-  const [activeTab, setActiveTab] = useState<'single' | 'batch'>('batch');
+  // Tabs: 'single' | 'batch' | 'failover'
+  const [activeTab, setActiveTab] = useState<'single' | 'batch' | 'failover'>('batch');
+
+  // Failover chaos state
+  const [targetReplica, setTargetReplica] = useState<'api-1' | 'api-2'>('api-1');
+  const [outageDuration, setOutageDuration] = useState<number>(30);
+  const [isSimulatingChaos, setIsSimulatingChaos] = useState(false);
+  const [chaosStatus, setChaosStatus] = useState<string | null>(null);
 
   // Single mode state
   const [callId, setCallId] = useState(`c-${Math.floor(10000 + Math.random() * 90000)}`);
@@ -181,7 +190,7 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
             }`}
           >
             <Zap className="w-4 h-4 text-amber-300" />
-            <span>Simulación en Ráfaga (Lotes)</span>
+            <span>Ráfaga (Lotes)</span>
           </button>
           <button
             type="button"
@@ -193,7 +202,19 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
             }`}
           >
             <Send className="w-4 h-4" />
-            <span>Llamada Individual</span>
+            <span>Individual</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('failover')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition ${
+              activeTab === 'failover'
+                ? 'bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-md shadow-rose-900/40'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <ServerCrash className="w-4 h-4 text-rose-300" />
+            <span>Simular Fallo API</span>
           </button>
         </div>
 
@@ -545,6 +566,153 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
               </button>
             </div>
           </form>
+        )}
+
+        {/* ===================== TAB 3: FAILOVER / CHAOS MODE ===================== */}
+        {activeTab === 'failover' && (
+          <div className="space-y-4">
+            <div className="p-4 bg-slate-950/80 rounded-2xl border border-rose-500/30 space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-rose-300">
+                  <ServerCrash className="w-4 h-4 text-rose-400" />
+                  <span>Simulación de Caída de Nodo (Failover Test)</span>
+                </div>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/30">
+                  Chaos Testing
+                </span>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Permite simular que una réplica de backend (<strong className="text-white">API 1</strong> o <strong className="text-white">API 2</strong>) colapsa bajo estrés. El balanceador Nginx detectará la indisponibilidad y redirigirá de inmediato el tráfico hacia la réplica hermana mediante <span className="text-amber-400 font-mono">proxy_next_upstream</span> sin que el webhook falle.
+              </p>
+
+              {/* Replica Selector */}
+              <div>
+                <label className="block text-xs text-slate-300 font-semibold mb-2">
+                  Seleccionar Réplica para Forzar Fallo:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTargetReplica('api-1')}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border ${
+                      targetReplica === 'api-1'
+                        ? 'bg-rose-500/20 border-rose-500 text-white shadow-lg shadow-rose-950/50'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5 text-rose-400" />
+                    <span>API Réplica 1 (api-1)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTargetReplica('api-2')}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border ${
+                      targetReplica === 'api-2'
+                        ? 'bg-rose-500/20 border-rose-500 text-white shadow-lg shadow-rose-950/50'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5 text-rose-400" />
+                    <span>API Réplica 2 (api-2)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Duration Slider */}
+              <div>
+                <div className="flex justify-between text-xs mb-1.5">
+                  <span className="text-slate-300 font-semibold">Duración de la Simulación de Caída:</span>
+                  <span className="font-mono text-amber-400 font-bold">{outageDuration} segundos</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="120"
+                  step="5"
+                  value={outageDuration}
+                  onChange={(e) => setOutageDuration(Number(e.target.value))}
+                  className="w-full accent-rose-500 cursor-pointer"
+                />
+              </div>
+
+              {chaosStatus && (
+                <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
+                  <div className="flex items-center gap-2 text-emerald-400 font-semibold mb-1">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Estado del Chaos Test:</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">{chaosStatus}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  disabled={isSimulatingChaos}
+                  onClick={async () => {
+                    setIsSimulatingChaos(true);
+                    try {
+                      const res = await simulateReplicaOutage(targetReplica, outageDuration, 'fail');
+                      setChaosStatus(res.message);
+                      addNotification({
+                        type: 'cluster_alert',
+                        title: `Fallo inducido en ${targetReplica}`,
+                        message: `Nginx enviará automáticamente las peticiones a la otra réplica durante ${outageDuration}s.`,
+                        durationMs: 7000,
+                      });
+                    } catch (err: any) {
+                      setChaosStatus(err.message || 'Error simulando fallo');
+                    } finally {
+                      setIsSimulatingChaos(false);
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-bold text-xs shadow-lg shadow-rose-950/60 transition disabled:opacity-50"
+                >
+                  <ServerCrash className="w-3.5 h-3.5" />
+                  <span>{isSimulatingChaos ? 'Aplicando Caída...' : `Inducir Fallo en ${targetReplica}`}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSimulatingChaos}
+                  onClick={async () => {
+                    setIsSimulatingChaos(true);
+                    try {
+                      const res = await simulateReplicaOutage(targetReplica, 0, 'restore');
+                      setChaosStatus(res.message);
+                      addNotification({
+                        type: 'cluster_alert',
+                        title: `Réplica ${targetReplica} restaurada`,
+                        message: 'El clúster vuelve a operar balanceado de manera equitativa.',
+                        durationMs: 5000,
+                      });
+                    } catch (err: any) {
+                      setChaosStatus(err.message || 'Error restaurando réplica');
+                    } finally {
+                      setIsSimulatingChaos(false);
+                    }
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs border border-slate-700 transition"
+                  title="Restaurar inmediatamente"
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

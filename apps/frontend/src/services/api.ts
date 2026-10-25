@@ -213,3 +213,16 @@ export async function triggerTestError(message?: string): Promise<{ success: boo
   return await res.json();
 }
 
+export async function simulateReplicaOutage(
+  replica: 'api-1' | 'api-2',
+  durationSeconds: number = 20,
+  action: 'fail' | 'restore' = 'fail'
+): Promise<{ success: boolean; message: string; replica: string; status: string }> {
+  const res = await fetch(`${API_BASE}/monitoring/simulate-outage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ replica, duration: durationSeconds, action }),
+  });
+  return await res.json();
+}
+

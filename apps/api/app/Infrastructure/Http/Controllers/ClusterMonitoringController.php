@@ -211,5 +211,40 @@ final class ClusterMonitoringController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Chaos Engineering: Simulate replica outage / degradation in Redis.
+     */
+    public function simulateOutage(Request $request): JsonResponse
+    {
+        $targetReplica = (string) $request->input('replica', 'api-1');
+        $durationSeconds = (int) $request->input('duration', 15);
+        $action = (string) $request->input('action', 'fail'); // 'fail' | 'restore'
+
+        $cacheKey = "chaos:fail_replica:{$targetReplica}";
+
+        if ($action === 'restore') {
+            Redis::del($cacheKey);
+            Log::info("Chaos: Replica '{$targetReplica}' manually restored to normal state.");
+            return response()->json([
+                'success' => true,
+                'message' => "Réplica {$targetReplica} restaurada. Ya procesa peticiones normalmente.",
+                'replica' => $targetReplica,
+                'status' => 'healthy',
+            ]);
+        }
+
+        // Set failure flag in shared Redis with TTL
+        Redis::setex($cacheKey, $durationSeconds, '1');
+        Log::warning("Chaos: Replica '{$targetReplica}' marked to simulate outage for {$durationSeconds}s.");
+
+        return response()->json([
+            'success' => true,
+            'message' => "Simulación de fallo activada en {$targetReplica} por {$durationSeconds} segundos. Las peticiones serán derivadas automáticamente a la otra réplica por Nginx Failover.",
+            'replica' => $targetReplica,
+            'status' => 'simulating_outage',
+            'duration' => $durationSeconds,
+        ]);
+    }
 }
 

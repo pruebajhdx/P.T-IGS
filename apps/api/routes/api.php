@@ -37,5 +37,6 @@ Route::prefix('v1')->group(function () {
     Route::get('/monitoring/cluster', [ClusterMonitoringController::class, 'status']);
     Route::get('/monitoring/errors', [ClusterMonitoringController::class, 'errors']);
     Route::post('/monitoring/test-error', [ClusterMonitoringController::class, 'triggerTestError']);
+    Route::post('/monitoring/simulate-outage', [ClusterMonitoringController::class, 'simulateOutage']);
 });
 

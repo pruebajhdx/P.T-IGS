@@ -28,6 +28,22 @@ final class CallWebhookController extends Controller
 
     public function handle(StoreIncomingCallRequest $request): JsonResponse
     {
+        $currentInstance = (string) config('app.instance_id', gethostname());
+
+        // Chaos simulation check: if this replica is simulating outage, return HTTP 503 so Nginx proxy_next_upstream retries the other replica
+        try {
+            $isChaosOutage = \Illuminate\Support\Facades\Redis::get("chaos:fail_replica:{$currentInstance}");
+            if ($isChaosOutage) {
+                Log::warning("Chaos: Simulating 503 outage on replica '{$currentInstance}'. Request triggering Nginx failover to secondary replica.");
+                return response()->json([
+                    'success' => false,
+                    'message' => "Simulated node outage on {$currentInstance}",
+                ], 503);
+            }
+        } catch (\Throwable) {
+            // Non-blocking if Redis is unreachable
+        }
+
         $dto = $request->toDTO();
         $callId = $dto->callId;
 

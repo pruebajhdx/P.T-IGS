@@ -6,6 +6,7 @@ export type NotificationType =
   | 'incoming_call'
   | 'simulation_progress'
   | 'simulation_complete'
+  | 'cluster_alert'
   | 'success'
   | 'warning'
   | 'info'
