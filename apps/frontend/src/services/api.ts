@@ -45,12 +45,20 @@ export async function toggleCallSpam(id: string, isSpam: boolean): Promise<CallS
   return json.data;
 }
 
-export async function sendCallWebhook(payload: WebhookPayload): Promise<{ data: CallSession; isDuplicate: boolean; servedBy?: string }> {
+export async function sendCallWebhook(payload: WebhookPayload): Promise<{
+  data: CallSession;
+  isDuplicate: boolean;
+  servedBy?: string;
+  statusCode: number;
+  latencyMs: number;
+}> {
+  const t0 = performance.now();
   const res = await fetch(`${API_BASE}/webhooks/calls`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+  const latencyMs = Math.round(performance.now() - t0);
   const json = await res.json();
   if (!res.ok && res.status !== 422) {
     throw new Error(json.message || 'Error sending webhook');
@@ -58,7 +66,9 @@ export async function sendCallWebhook(payload: WebhookPayload): Promise<{ data: 
   return {
     data: json.data,
     isDuplicate: Boolean(json.meta?.isDuplicate),
-    servedBy: json.meta?.servedBy,
+    servedBy: json.meta?.servedBy || res.headers.get('x-served-by') || undefined,
+    statusCode: res.status,
+    latencyMs,
   };
 }
 

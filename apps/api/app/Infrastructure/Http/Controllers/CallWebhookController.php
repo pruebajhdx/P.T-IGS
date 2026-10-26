@@ -30,10 +30,19 @@ final class CallWebhookController extends Controller
     {
         $currentInstance = (string) config('app.instance_id', gethostname());
 
-        // Chaos simulation check: if this replica is simulating outage, return HTTP 503 so Nginx proxy_next_upstream retries the other replica
+        // Chaos simulation check: check both 'api-1' and 'api-replica-1' canonical variants
         try {
-            $isChaosOutage = \Illuminate\Support\Facades\Redis::get("chaos:fail_replica:{$currentInstance}");
-            if ($isChaosOutage) {
+            $isChaos1 = \Illuminate\Support\Facades\Redis::get("chaos:fail_replica:api-1") || \Illuminate\Support\Facades\Redis::get("chaos:fail_replica:api-replica-1");
+            $isChaos2 = \Illuminate\Support\Facades\Redis::get("chaos:fail_replica:api-2") || \Illuminate\Support\Facades\Redis::get("chaos:fail_replica:api-replica-2");
+
+            $shouldFailThisNode = false;
+            if ($isChaos1 && (str_contains($currentInstance, '1') || str_contains($currentInstance, 'api-1'))) {
+                $shouldFailThisNode = true;
+            } elseif ($isChaos2 && (str_contains($currentInstance, '2') || str_contains($currentInstance, 'api-2'))) {
+                $shouldFailThisNode = true;
+            }
+
+            if ($shouldFailThisNode) {
                 Log::warning("Chaos: Simulating 503 outage on replica '{$currentInstance}'. Request triggering Nginx failover to secondary replica.");
                 return response()->json([
                     'success' => false,

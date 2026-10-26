@@ -33,6 +33,9 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
     startBatchSimulation,
     stopBatchSimulation,
     addNotification,
+    activeChaos,
+    setActiveChaos,
+    addResolutionLog,
   } = useNotifications();
 
   // Tabs: 'single' | 'batch' | 'failover'
@@ -94,6 +97,22 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
         success: true,
         isDuplicate: res.isDuplicate,
         servedBy: res.servedBy,
+      });
+
+      const isFailover = activeChaos !== null && (
+        (activeChaos === 'api-1' && (res.servedBy?.toLowerCase().includes('2') || res.servedBy?.toLowerCase().includes('replica-2'))) ||
+        (activeChaos === 'api-2' && (res.servedBy?.toLowerCase().includes('1') || res.servedBy?.toLowerCase().includes('replica-1')))
+      );
+
+      addResolutionLog({
+        callId,
+        phoneNumber,
+        agent,
+        status: res.statusCode || (res.isDuplicate ? 200 : 201),
+        isDuplicate: res.isDuplicate,
+        servedBy: res.servedBy,
+        latencyMs: res.latencyMs,
+        failoverDetected: Boolean(isFailover),
       });
 
       if (res.isDuplicate) {
@@ -657,6 +676,7 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
                     try {
                       const res = await simulateReplicaOutage(targetReplica, outageDuration, 'fail');
                       setChaosStatus(res.message);
+                      setActiveChaos(targetReplica);
                       addNotification({
                         type: 'cluster_alert',
                         title: `Fallo inducido en ${targetReplica}`,
@@ -683,6 +703,7 @@ export const SimulateCallModal: React.FC<SimulateCallModalProps> = ({
                     try {
                       const res = await simulateReplicaOutage(targetReplica, 0, 'restore');
                       setChaosStatus(res.message);
+                      setActiveChaos(null);
                       addNotification({
                         type: 'cluster_alert',
                         title: `Réplica ${targetReplica} restaurada`,

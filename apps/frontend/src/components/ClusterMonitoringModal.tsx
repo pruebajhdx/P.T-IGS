@@ -143,7 +143,25 @@ export const ClusterMonitoringModal: React.FC<ClusterMonitoringModalProps> = ({
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Nodos Upstream:</span>
-                  <span className="font-mono text-sky-300">api-1, api-2</span>
+                  <div className="flex items-center gap-1 font-mono text-[11px]">
+                    {status?.cluster?.load_balancer?.upstream_nodes ? (
+                      status.cluster.load_balancer.upstream_nodes.map((node) => (
+                        <span
+                          key={node.id}
+                          className={`px-1.5 py-0.2 rounded border ${
+                            node.status === 'outage_simulated'
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 font-bold line-through'
+                              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          }`}
+                          title={node.status === 'outage_simulated' ? 'Caída Simulada Activa' : 'Nodo Saludable'}
+                        >
+                          {node.id}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sky-300">api-1, api-2</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

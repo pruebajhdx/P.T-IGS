@@ -6,7 +6,7 @@ import { CallHistoryView } from './components/CallHistoryView';
 import { SimulateCallModal } from './components/SimulateCallModal';
 import { ClusterMonitoringModal } from './components/ClusterMonitoringModal';
 import { ToastContainer } from './components/ToastContainer';
-import { FloatingSimulationDock } from './components/FloatingSimulationDock';
+import { LiveResolutionInspector } from './components/LiveResolutionInspector';
 import { NotificationProvider } from './context/NotificationContext';
 import { useCallsManager } from './hooks/useCallsManager';
 
@@ -106,11 +106,8 @@ const MainDashboard: React.FC = () => {
         onClose={() => setIsMonitoringOpen(false)}
       />
 
-      {/* Floating Simulation Dock */}
-      <FloatingSimulationDock
-        onOpenModal={() => setIsSimulateOpen(true)}
-        isModalOpen={isSimulateOpen}
-      />
+      {/* Live Cluster Resolution & Failover Telemetry Inspector */}
+      <LiveResolutionInspector />
 
       {/* Floating Notifications & Toasts */}
       <ToastContainer />

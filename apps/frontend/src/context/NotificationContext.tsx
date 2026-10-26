@@ -12,6 +12,19 @@ export type NotificationType =
   | 'info'
   | 'error';
 
+export interface LiveResolutionLog {
+  id: string;
+  timestamp: string;
+  callId: string;
+  phoneNumber: string;
+  agent: string;
+  status: number;
+  isDuplicate: boolean;
+  servedBy?: string;
+  latencyMs: number;
+  failoverDetected?: boolean;
+}
+
 export interface AppNotification {
   id: string;
   type: NotificationType;
@@ -60,6 +73,12 @@ interface NotificationContextValue {
   };
   startBatchSimulation: (options: BatchSimulationOptions) => Promise<void>;
   stopBatchSimulation: () => void;
+  // Resolution logs & Chaos telemetry
+  resolutionLogs: LiveResolutionLog[];
+  addResolutionLog: (log: Omit<LiveResolutionLog, 'id' | 'timestamp'>) => void;
+  clearResolutionLogs: () => void;
+  activeChaos: 'api-1' | 'api-2' | null;
+  setActiveChaos: (replica: 'api-1' | 'api-2' | null) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -71,6 +90,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   });
 
   const [isBatchRunning, setIsBatchRunning] = useState(false);
+  const [resolutionLogs, setResolutionLogs] = useState<LiveResolutionLog[]>([]);
+  const [activeChaos, setActiveChaos] = useState<'api-1' | 'api-2' | null>(null);
+
+  const addResolutionLog = useCallback((log: Omit<LiveResolutionLog, 'id' | 'timestamp'>) => {
+    const id = `res-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const timestamp = new Date().toLocaleTimeString();
+    setResolutionLogs((prev) => [{ ...log, id, timestamp }, ...prev.slice(0, 49)]); // keep last 50
+  }, []);
+
+  const clearResolutionLogs = useCallback(() => {
+    setResolutionLogs([]);
+  }, []);
   const [batchProgress, setBatchProgress] = useState({
     current: 0,
     total: 0,
@@ -222,12 +253,38 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           if (isRecurrent) stats.recurring += 1;
         }
 
+        const isFailover = activeChaos !== null && (
+          (activeChaos === 'api-1' && (res.servedBy?.toLowerCase().includes('2') || res.servedBy?.toLowerCase().includes('replica-2'))) ||
+          (activeChaos === 'api-2' && (res.servedBy?.toLowerCase().includes('1') || res.servedBy?.toLowerCase().includes('replica-1')))
+        );
+
+        addResolutionLog({
+          callId: targetCallId,
+          phoneNumber: phone,
+          agent,
+          status: res.statusCode || (res.isDuplicate ? 200 : 201),
+          isDuplicate: res.isDuplicate,
+          servedBy: res.servedBy,
+          latencyMs: res.latencyMs,
+          failoverDetected: Boolean(isFailover),
+        });
+
         // Live trigger UI update with the newly registered call session
         if (options.onCallSent) {
           options.onCallSent(res.data, res.isDuplicate);
         }
-      } catch {
+      } catch (err: any) {
         stats.errors += 1;
+        addResolutionLog({
+          callId: targetCallId,
+          phoneNumber: phone,
+          agent,
+          status: 500,
+          isDuplicate: false,
+          servedBy: 'error',
+          latencyMs: 0,
+          failoverDetected: false,
+        });
       }
 
       stats.current = i + 1;
@@ -276,6 +333,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         batchProgress,
         startBatchSimulation,
         stopBatchSimulation,
+        resolutionLogs,
+        addResolutionLog,
+        clearResolutionLogs,
+        activeChaos,
+        setActiveChaos,
       }}
     >
       {children}

@@ -97,6 +97,10 @@ final class ClusterMonitoringController extends Controller
         $memoryUsage = round(memory_get_usage(true) / 1024 / 1024, 2);
         $peakMemory = round(memory_get_peak_usage(true) / 1024 / 1024, 2);
 
+        // Check if any chaos failure flag is currently active in Redis
+        $chaos1 = (bool) (Redis::get('chaos:fail_replica:api-1') || Redis::get('chaos:fail_replica:api-replica-1'));
+        $chaos2 = (bool) (Redis::get('chaos:fail_replica:api-2') || Redis::get('chaos:fail_replica:api-replica-2'));
+
         $executionTimeMs = round((microtime(true) - $startTotal) * 1000, 2);
 
         return response()->json([
@@ -114,8 +118,18 @@ final class ClusterMonitoringController extends Controller
                     'waiting' => $nginxMetrics['waiting'],
                     'total_requests' => $nginxMetrics['total_requests'],
                     'upstream_nodes' => [
-                        ['id' => 'api-1', 'target' => 'api-1:8000', 'status' => 'healthy', 'weight' => 1],
-                        ['id' => 'api-2', 'target' => 'api-2:8000', 'status' => 'healthy', 'weight' => 1],
+                        [
+                            'id' => 'api-1',
+                            'target' => 'api-1:8000',
+                            'status' => $chaos1 ? 'outage_simulated' : 'healthy',
+                            'weight' => $chaos1 ? 0 : 1,
+                        ],
+                        [
+                            'id' => 'api-2',
+                            'target' => 'api-2:8000',
+                            'status' => $chaos2 ? 'outage_simulated' : 'healthy',
+                            'weight' => $chaos2 ? 0 : 1,
+                        ],
                     ],
                 ],
                 'api_instances' => [
@@ -221,27 +235,36 @@ final class ClusterMonitoringController extends Controller
         $durationSeconds = (int) $request->input('duration', 15);
         $action = (string) $request->input('action', 'fail'); // 'fail' | 'restore'
 
-        $cacheKey = "chaos:fail_replica:{$targetReplica}";
+        // Support both names: api-1 / api-replica-1
+        $canonicalNum = str_contains($targetReplica, '2') ? '2' : '1';
+        $keys = [
+            "chaos:fail_replica:api-{$canonicalNum}",
+            "chaos:fail_replica:api-replica-{$canonicalNum}",
+        ];
 
         if ($action === 'restore') {
-            Redis::del($cacheKey);
-            Log::info("Chaos: Replica '{$targetReplica}' manually restored to normal state.");
+            foreach ($keys as $k) {
+                Redis::del($k);
+            }
+            Log::info("Chaos: Replica 'api-{$canonicalNum}' manually restored to normal state.");
             return response()->json([
                 'success' => true,
-                'message' => "Réplica {$targetReplica} restaurada. Ya procesa peticiones normalmente.",
-                'replica' => $targetReplica,
+                'message' => "Réplica api-{$canonicalNum} restaurada. Ya procesa peticiones normalmente.",
+                'replica' => "api-{$canonicalNum}",
                 'status' => 'healthy',
             ]);
         }
 
-        // Set failure flag in shared Redis with TTL
-        Redis::setex($cacheKey, $durationSeconds, '1');
-        Log::warning("Chaos: Replica '{$targetReplica}' marked to simulate outage for {$durationSeconds}s.");
+        // Set failure flag in shared Redis with TTL for both key formats
+        foreach ($keys as $k) {
+            Redis::setex($k, $durationSeconds, '1');
+        }
+        Log::warning("Chaos: Replica 'api-{$canonicalNum}' marked to simulate outage for {$durationSeconds}s.");
 
         return response()->json([
             'success' => true,
-            'message' => "Simulación de fallo activada en {$targetReplica} por {$durationSeconds} segundos. Las peticiones serán derivadas automáticamente a la otra réplica por Nginx Failover.",
-            'replica' => $targetReplica,
+            'message' => "Simulación de fallo activada en api-{$canonicalNum} por {$durationSeconds} segundos. Las peticiones serán derivadas automáticamente a la otra réplica por Nginx Failover.",
+            'replica' => "api-{$canonicalNum}",
             'status' => 'simulating_outage',
             'duration' => $durationSeconds,
         ]);
